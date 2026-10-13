@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { LineInfo, LineMode, LineWindow, MascotActivity, MascotPlace, MascotRoll, MascotTurn } from '../types'
+import type { LineInfo, LineMode, LinePlace, LineWindow, MascotActivity, MascotPlace, MascotRoll, MascotTurn } from '../types'
 import { ERROR_FRAMES, FACES, FLAT, SHIMMER, TALK, UNIQUE_RAMP } from './mascot-data'
 import type { Activity, Riddle } from './mascot-data'
 import type { FaceProps, TalkPlan } from './mascot-face'
@@ -21,6 +21,10 @@ const MODES: Record<LineMode, string> = {
   script: '스크립트 (상태줄을 스크립트가 그림, 기본)',
   app: '앱 (정보 줄도 플러그인이 그리고 스크립트는 멈춤)',
 }
+const LINE_PLACES: Record<LinePlace, string> = {
+  above: '프롬프트 바로 위 (한 줄 전체)',
+  below: '프롬프트 아래 (모드 표시 옆, 넘치면 끝을 자름)',
+}
 const DEFAULT_PLACE: MascotPlace = 'right'
 // What the status line runs while the plugin draws the info line: nothing.
 const APP_COMMAND = 'exit 0'
@@ -37,6 +41,7 @@ const CRIT_AT = 90
 
 const place = atom({ plugin: 'statusline', key: 'place' } as const, DEFAULT_PLACE)
 const mode = atom({ plugin: 'statusline', key: 'mode' } as const, 'script')
+const linePlace = atom({ plugin: 'statusline', key: 'linePlace' } as const, 'above')
 const turn = atom({ plugin: 'statusline', key: 'turn' } as const, { state: 'idle', stamp: 0 })
 const activity = atom({ plugin: 'statusline', key: 'activity' } as const, null)
 const roll = atom({ plugin: 'statusline', key: 'roll' } as const, null)
@@ -75,6 +80,10 @@ function isPlace(text: string): text is MascotPlace {
 
 function isMode(text: string): text is LineMode {
   return Object.hasOwn(MODES, text)
+}
+
+function isLinePlace(text: string): text is LinePlace {
+  return Object.hasOwn(LINE_PLACES, text)
 }
 
 function isTier(text: string): text is MascotRoll['tier'] {
@@ -456,7 +465,7 @@ export const register: Register = on => {
     await $.command.register({
       name: 'statusline-mode',
       description: '정보 줄을 누가 그릴지: script(상태줄 스크립트, 기본) · app(플러그인이 그리고 스크립트는 멈춤)',
-      argumentHint: '[script|app]',
+      argumentHint: '[script|app] [above|below]',
       immediate: true,
     })
     const savedPlace = await $.store.get('place')
@@ -466,8 +475,11 @@ export const register: Register = on => {
     const savedMode = await $.store.get('mode')
     const json = await readSettingsFile($)
     const how: LineMode = savedMode === 'app' && json?.statusLine?.command === APP_COMMAND ? 'app' : 'script'
+    const savedLine = await $.store.get('linePlace')
+    const lineAt = typeof savedLine === 'string' && isLinePlace(savedLine) ? savedLine : 'above'
     await update($, place, () => where)
     await update($, mode, () => how)
+    await update($, linePlace, () => lineAt)
     await applyPlace($, where, how)
     rollSeenAt = -1
     await refreshRoll($)
@@ -498,21 +510,28 @@ export const register: Register = on => {
   })
 
   on('command.run', { command: 'statusline-mode' }, async ($, e) => {
-    const arg = e.args.trim().toLowerCase()
+    const [arg = '', at = ''] = e.args.trim().toLowerCase().split(/\s+/)
+    const usage = '바꾸려면 /statusline-mode script · app · app above · app below'
     if (arg === '') {
       const now = await read($, mode)
-      return { text: `지금 방식: ${MODES[now]}\n바꾸려면 /statusline-mode script · app` }
+      const where = now === 'app' ? `\n정보 줄 위치: ${LINE_PLACES[await read($, linePlace)]}` : ''
+      return { text: `지금 방식: ${MODES[now]}${where}\n${usage}` }
     }
-    if (!isMode(arg)) {
-      return { text: `그런 방식은 없습니다: ${arg}\n고를 수 있는 값: script · app` }
+    if (!isMode(arg) || (at !== '' && (arg !== 'app' || !isLinePlace(at)))) {
+      return { text: `그런 방식은 없습니다: ${e.args.trim()}\n${usage}` }
     }
     const failed = await switchMode($, arg)
     if (failed !== null) return { text: failed }
     await update($, mode, () => arg)
     await $.store.set('mode', arg)
+    if (isLinePlace(at)) {
+      await update($, linePlace, () => at)
+      await $.store.set('linePlace', at)
+    }
     await applyPlace($, await read($, place), arg)
     await refreshInfo($).catch(() => undefined)
-    return { text: `정보 줄: ${MODES[arg]}` }
+    const where = arg === 'app' ? ` · 위치: ${LINE_PLACES[await read($, linePlace)]}` : ''
+    return { text: `정보 줄: ${MODES[arg]}${where}` }
   })
 
   // The turn's states, from the same events the status line's hooks use. A
@@ -569,15 +588,18 @@ export const register: Register = on => {
     )
   })
 
+  // Under the prompt, beside the mode label: the info line in app mode when
+  // placed below, and the mascot when placed left.
   on('ui.render', { component: 'PromptHint' }, async ($, e, next) => {
     if (e.surface !== 'terminal') return next(e)
     const how = await read($, mode)
     const where = await read($, place)
-    const line = how === 'app' ? await read($, info) : null
+    const isBelow = how === 'app' && (await read($, linePlace)) === 'below'
+    const line = isBelow ? await read($, info) : null
     const hint = e.props.hint.trim()
-    // The mascot sits here when placed left, or in app mode when its own
-    // place (the end of the status line) is gone.
-    const wantsFace = where === 'left' || (how === 'app' && where === 'line')
+    // In app mode a mascot placed at the end of the status line follows the
+    // info line, since that line is the plugin's now.
+    const wantsFace = where === 'left' || (isBelow && where === 'line')
     // Whatever the engine has to say here (a second Ctrl-C, a hint) wins
     // over a lone face; next to the info line it is kept, dim, at the end.
     if (line === null && (!wantsFace || hint !== '')) return next(e)
@@ -588,24 +610,51 @@ export const register: Register = on => {
     const nowSec = Math.floor((await $.clock.now()) / 1000)
     return (
       <Box flexDirection="row">
-        {line !== null &&
-          infoPieces(line, nowSec, s.showsWeek).map(p => <Text color={s.isColored ? p.color : undefined}>{p.text}</Text>)}
+        {line !== null && infoText(Text, line, nowSec, s, hint)}
         {line !== null && face !== null && <Text> </Text>}
         {face !== null && <Client key="mascot" module="./mascot-face.tsx" props={face} />}
-        {line !== null && hint !== '' && <Text dimColor> · {hint}</Text>}
       </Box>
     )
   })
 
+  // The band right above the prompt: the info line in app mode (a row of its
+  // own, so it never wraps) and the mascot when it is placed there.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    if (e.surface !== 'terminal' || e.props.hasSurvey || (await read($, place)) !== 'above') return next(e)
-    const props = await faceProps($)
-    if (props === null) return next(e)
-    const { Box, Client } = $.ui.resolve(e)
+    if (e.surface !== 'terminal' || e.props.hasSurvey) return next(e)
+    const how = await read($, mode)
+    const where = await read($, place)
+    const isAbove = how === 'app' && (await read($, linePlace)) === 'above'
+    const line = isAbove ? await read($, info) : null
+    const wantsFace = where === 'above' || (isAbove && where === 'line')
+    const face = wantsFace ? await faceProps($) : null
+    if (line === null && face === null) return next(e)
+    const { Box, Text, Client } = $.ui.resolve(e)
+    const s = await loadSettings($)
+    const nowSec = Math.floor((await $.clock.now()) / 1000)
     return (
-      <Box>
-        <Client key="mascot" module="./mascot-face.tsx" props={props} />
+      <Box flexDirection="row">
+        {line !== null && infoText(Text, line, nowSec, s, '')}
+        {line !== null && face !== null && <Text> </Text>}
+        {face !== null && <Client key="mascot" module="./mascot-face.tsx" props={face} />}
       </Box>
     )
   })
+}
+
+// The info line as one Text, so it is cut at the row's end and never wraps.
+function infoText(
+  Text: (props: { color?: string; dimColor?: boolean; wrap?: 'truncate-end'; children?: unknown }) => unknown,
+  line: LineInfo,
+  nowSec: number,
+  s: Settings,
+  hint: string,
+) {
+  return (
+    <Text wrap="truncate-end">
+      {infoPieces(line, nowSec, s.showsWeek).map(p => (
+        <Text color={s.isColored ? p.color : undefined}>{p.text}</Text>
+      ))}
+      {hint !== '' && <Text dimColor> · {hint}</Text>}
+    </Text>
+  )
 }

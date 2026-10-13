@@ -8,6 +8,11 @@ export type MascotPlace = 'right' | 'left' | 'above' | 'line'
 // itself under the prompt, with the script switched off.
 export type LineMode = 'script' | 'app'
 
+// Where the plugin draws the info line in app mode: on a row of its own
+// right above the prompt, or under the prompt, cut to the room beside the
+// mode label there.
+export type LinePlace = 'above' | 'below'
+
 // What the turn is doing, as the hooks used to record it, and when (epoch s).
 export type MascotTurn = {
   state: 'idle' | 'working' | 'done' | 'notify' | 'error'
@@ -44,6 +49,7 @@ declare module 'claude-code' {
     statusline: {
       place: MascotPlace
       mode: LineMode
+      linePlace: LinePlace
       turn: MascotTurn
       activity: MascotActivity | null
       roll: MascotRoll | null
