@@ -2,13 +2,14 @@
 #
 #   .\install.ps1
 #   .\install.ps1 -NoMascot      # status line only, skip the mascot hooks
+#   .\install.ps1 -ScriptsOnly   # replace the scripts, leave settings.json alone
 #   irm https://raw.githubusercontent.com/black-astro/claude-statusline-astro/main/install.ps1 | iex
 #
 # Copies statusline.ps1 (and mascot-hook.ps1) into ~/.claude/, then merges a
 # statusLine entry and the mascot hooks into ~/.claude/settings.json. Existing
 # settings are preserved and backed up.
 
-param([switch]$NoMascot)
+param([switch]$NoMascot, [switch]$ScriptsOnly)
 
 $ErrorActionPreference = 'Stop'
 
@@ -45,6 +46,12 @@ function Install-Script {
 Install-Script 'statusline.ps1' $target
 if (-not $NoMascot) { Install-Script 'mascot-hook.ps1' $hookTarget }
 if (-not $NoMascot) { Install-Script 'mascot.cmd' (Join-Path $claudeDir 'mascot.cmd') }
+
+# An update replaces the scripts only; settings.json (and app mode) stay as they are.
+if ($ScriptsOnly) {
+    Write-Host 'Done. The scripts are up to date; settings.json was left as it was.'
+    exit 0
+}
 
 # Forward slashes keep the JSON free of escaped backslashes.
 $commandPath = $target -replace '\\', '/'

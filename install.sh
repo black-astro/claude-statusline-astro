@@ -3,6 +3,7 @@
 #
 #   ./install.sh                 # from a cloned repo
 #   ./install.sh --no-mascot     # status line only, skip the mascot hooks
+#   ./install.sh --scripts-only  # replace the scripts, leave settings.json alone
 #   curl -fsSL https://raw.githubusercontent.com/black-astro/claude-statusline-astro/main/install.sh | sh
 #
 # Copies statusline.sh (and mascot-hook.sh) into ~/.claude/, then merges a
@@ -18,9 +19,11 @@ HOOK_TARGET="${CLAUDE_DIR}/mascot-hook.sh"
 SETTINGS="${CLAUDE_DIR}/settings.json"
 
 NO_MASCOT=0
+SCRIPTS_ONLY=0
 for arg in "$@"; do
     case "$arg" in
         --no-mascot) NO_MASCOT=1 ;;
+        --scripts-only) SCRIPTS_ONLY=1 ;;
     esac
 done
 
@@ -54,6 +57,12 @@ install_script() {
 install_script 'statusline.sh' "$TARGET"
 [ "$NO_MASCOT" -eq 1 ] || install_script 'mascot-hook.sh' "$HOOK_TARGET"
 [ "$NO_MASCOT" -eq 1 ] || install_script 'mascot' "${CLAUDE_DIR}/mascot"
+
+# An update replaces the scripts only; settings.json (and app mode) stay as they are.
+if [ "$SCRIPTS_ONLY" -eq 1 ]; then
+    echo 'Done. The scripts are up to date; settings.json was left as it was.'
+    exit 0
+fi
 
 CMD="sh \"${TARGET}\""
 HOOK="sh \"${HOOK_TARGET}\""

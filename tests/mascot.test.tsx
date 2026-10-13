@@ -12,7 +12,7 @@ const SCRIPT_LINE = { type: 'command', command: 'powershell -File C:/Users/me/.c
 // roll, the key, settings.json and the shared rate-limit readings) and what
 // the session reports.
 async function machine(on: On, roll: { tier: string; index: number } | null, options: { forged?: boolean } = {}) {
-  mock.env(on, { USERPROFILE: '/home/me' })
+  mock.env(on, { USERPROFILE: '/home/me', OS: 'Windows_NT' })
   mock.store(on)
   const clock = mock.clock(on, { now: 1_800_000_000_000 })
   const files: Record<string, string> = {
@@ -56,9 +56,20 @@ async function machine(on: On, roll: { tier: string; index: number } | null, opt
       rateLimits: [{ kind: 'five_hour', percentUsed: 63, resetsAt: '2027-01-15T09:00:00Z' }],
     },
   }))
-  on('process.run', () => ({
-    value: { exitCode: 0, stdout: '/work/my-project\nmain\nabc123\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
-  }))
+  // git answers the info line; the plugin's own scripts answer the commands.
+  const ran: string[][] = []
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    ran.push(argv)
+    const out = (stdout: string) => ({
+      value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+    })
+    if (argv[0] === 'git') return out('/work/my-project\nmain\nabc123\n')
+    if (argv.some(a => a.endsWith('install.ps1') || a.endsWith('install.sh'))) return out('installed  statusline.ps1\r\nDone.\r\n')
+    if (argv.includes('-Roll')) return out('오늘의 마스코트를 뽑았습니다!\r\n  \u001b[1;38;2;232;115;197m뿅!\u001b[0m\r\n')
+    if (argv.includes('-Version')) return out('claude-statusline-astro 9.9.9\r\n')
+    return out('지금 마스코트\r\n')
+  })
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   on('classic.UserPromptSubmit', () => ({}))
   on('classic.Stop', () => ({}))
@@ -69,7 +80,7 @@ async function machine(on: On, roll: { tier: string; index: number } | null, opt
     const { Text } = $.ui.resolve(e)
     return <Text>engine</Text>
   })
-  return { clock, files }
+  return { clock, files, ran }
 }
 
 const RIGHT = {
@@ -271,4 +282,28 @@ test('app mode draws the info line itself, switches the script off, and gives it
   const hint2 = await $.ui.mount(HINT)
   expect(await hint2.find({ type: 'Text', text: 'engine' })).toBeDefined()
   await hint2.unmount()
+})
+
+test('the commands answer by themselves: scripts run, colours stripped, no turn taken', async ($, on) => {
+  const { ran } = await machine(on, { tier: 'legend', index: 1 })
+  await $.session.start(start)
+
+  const rolled = await $.command.run({ command: 'statusline-roll', args: '' })
+  expect(rolled.text).toBe('오늘의 마스코트를 뽑았습니다!\n  뿅!')
+  const roll = ran.find(a => a.includes('-Roll'))
+  expect(roll?.[0]).toBe('powershell')
+  expect(roll?.some(a => a.endsWith('/scripts/statusline.ps1'))).toBe(true)
+
+  const help = await $.command.run({ command: 'statusline-help', args: '' })
+  expect(help.text).toContain('/statusline-place')
+  expect(help.text).toContain('EFFORT')
+
+  // An update replaces the scripts only and leaves settings.json alone.
+  const updated = await $.command.run({ command: 'statusline-update', args: '' })
+  expect(ran.some(a => a.some(x => x.endsWith('install.ps1')) && a.includes('-ScriptsOnly'))).toBe(true)
+  expect(updated.text).toContain('9.9.9')
+
+  const installed = await $.command.run({ command: 'statusline-install', args: '' })
+  expect(ran.some(a => a.some(x => x.endsWith('install.ps1')) && !a.includes('-ScriptsOnly'))).toBe(true)
+  expect(installed.text).toContain('Done.')
 })

@@ -56,6 +56,7 @@ type Settings = {
   showsEffort: boolean
   cacheDir: string
   settingsFile: string
+  claudeDir: string
 }
 
 // The status line's own switches, read once per load.
@@ -72,6 +73,7 @@ function loadSettings($: EngineInterface): Promise<Settings> {
       showsEffort: (await $.env.get('STATUSLINE_EFFORT')) !== '0',
       cacheDir: (await $.env.get('STATUSLINE_CACHE_DIR')) || `${home}/.claude/statusline-cache`,
       settingsFile: `${config}/settings.json`,
+      claudeDir: `${home}/.claude`,
     }
   })()
   return settings
@@ -487,10 +489,99 @@ async function noteEffort($: EngineInterface, e: unknown): Promise<void> {
   if (typeof level === 'string' && LEVELS.includes(level)) await update($, effort, () => level)
 }
 
+// ---- commands --------------------------------------------------------------
+// Every command answers itself here, without the model: none of them is
+// listed in the model's context, and running one costs no turn.
+
+const HELP = `명령어
+  /statusline-roll      마스코트 뽑기 (하루 한 번)
+  /statusline-today     지금 쓰고 있는 마스코트 확인
+  /statusline-place     마스코트 위치 (right 아래 오른쪽 · left 아래 왼쪽 · above 위 · line 상태줄 끝)
+  /statusline-mode      정보 줄 방식 (script 상태줄 스크립트 · app 프롬프트 위 · app below 프롬프트 아래)
+  /statusline-update    상태줄 스크립트를 최신으로 (설정은 그대로)
+  /statusline-install   설치 · 재설치
+  /statusline-help      이 도움말
+
+읽는 법
+  DIR 프로젝트 폴더 · GIT 브랜치 · MODEL 모델 (opus5.5처럼 짧게)
+  EFFORT L M H XH, max 는 U · CTX 대화 사용량 · 5H 5시간 한도 + 남은 시간
+
+마스코트
+  하루 한 번 뽑고, 뽑기 전까지 지금 얼굴이 유지됩니다.
+  커먼 40% · 언커먼 35% · 레어 18% · 유니크 6% · 레전드 1%, 얼굴 51종.
+  작업 중에는 대사가 바뀌고 넌센스 퀴즈도 냅니다. 등급이 높을수록 말을 잘합니다.
+
+옵션 (~/.claude/settings.json 의 "env", 다시 열면 적용)
+  STATUSLINE_MASCOT=0      마스코트 숨기기
+  STATUSLINE_TALK=0        얼굴만, 대사 없이
+  STATUSLINE_EFFORT=0      effort 숨기기
+  STATUSLINE_SEVEN_DAY=1   주간(7일) 게이지 표시
+  STATUSLINE_TRUE_COLOR=0  256색 터미널용
+  NO_COLOR=1               색 전부 끄기
+
+터미널에서
+  ~/.claude/mascot roll  (Windows: ~\\.claude\\mascot.cmd roll)  뽑기`
+
+async function isWindows($: EngineInterface): Promise<boolean> {
+  return (await $.env.get('OS')) === 'Windows_NT'
+}
+
+// What a script printed, as plain text: no colours, no carriage returns.
+function plainOutput(out: string): string {
+  // eslint-disable-next-line no-control-regex
+  return out.replace(/\u001b\[[0-9;]*m/g, '').replace(/\r/g, '').trim()
+}
+
+// Runs the status line script that came with the plugin: -Roll, -Today, -Version.
+async function runLine($: EngineInterface, what: 'Roll' | 'Today' | 'Version'): Promise<string> {
+  const root = $.plugin.root
+  const argv = (await isWindows($))
+    ? ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', `${root}/scripts/statusline.ps1`, `-${what}`]
+    : ['sh', `${root}/scripts/statusline.sh`, `--${what.toLowerCase()}`]
+  try {
+    const run = await $.process.run(argv, { env: { NO_COLOR: '1' }, timeoutMs: 30_000 })
+    return plainOutput(run.stdout) || plainOutput(run.stderr) || '출력이 없습니다.'
+  } catch {
+    return '상태줄 스크립트를 실행하지 못했습니다. /statusline-install 로 다시 설치해 보세요.'
+  }
+}
+
+// Runs the installer that came with the plugin, from its own folder, so the
+// scripts it copies are this version's. An update leaves settings.json alone.
+async function runInstaller($: EngineInterface, isUpdate: boolean): Promise<string> {
+  const root = $.plugin.root
+  const argv = (await isWindows($))
+    ? ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', `${root}/install.ps1`, ...(isUpdate ? ['-ScriptsOnly'] : [])]
+    : ['sh', `${root}/install.sh`, ...(isUpdate ? ['--scripts-only'] : [])]
+  try {
+    const run = await $.process.run(argv, { env: { NO_COLOR: '1' }, timeoutMs: 60_000 })
+    const out = plainOutput(`${run.stdout}\n${run.stderr}`)
+    return run.exitCode === 0 ? out : `설치에 실패했습니다.\n${out}`
+  } catch {
+    return '설치 스크립트를 실행하지 못했습니다.'
+  }
+}
+
+async function isInstalled($: EngineInterface): Promise<boolean> {
+  const { claudeDir } = await loadSettings($)
+  const name = (await isWindows($)) ? 'statusline.ps1' : 'statusline.sh'
+  try {
+    return await $.fs.exists(`${claudeDir}/${name}`)
+  } catch {
+    return false
+  }
+}
+
 // ---- hooks -----------------------------------------------------------------
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    // Each by its literal name, so the engine knows these hooks answer them.
+    await $.command.register({ name: 'statusline-roll', description: '오늘의 마스코트를 뽑는다 (하루 한 번)', immediate: true })
+    await $.command.register({ name: 'statusline-today', description: '지금 쓰고 있는 마스코트를 보여준다', immediate: true })
+    await $.command.register({ name: 'statusline-help', description: '상태줄 사용법과 명령어를 보여준다', immediate: true })
+    await $.command.register({ name: 'statusline-update', description: '상태줄 스크립트를 최신 버전으로 바꾼다 (설정은 그대로)', immediate: true })
+    await $.command.register({ name: 'statusline-install', description: '상태줄을 설치하거나 다시 설치한다', immediate: true })
     await $.command.register({
       name: 'statusline-place',
       description: '마스코트 위치 바꾸기: right(아래 오른쪽) · left(아래 왼쪽) · above(위) · line(상태줄 끝)',
@@ -529,6 +620,31 @@ export const register: Register = on => {
     })
 
     return next(e)
+  })
+
+  on('command.run', { command: 'statusline-roll' }, async $ => ({ text: await runLine($, 'Roll') }))
+
+  on('command.run', { command: 'statusline-today' }, async $ => ({ text: await runLine($, 'Today') }))
+
+  on('command.run', { command: 'statusline-help' }, async $ => {
+    const first = (await isInstalled($)) ? '' : '아직 설치되지 않았습니다. 먼저 /statusline-install 을 실행하세요.\n\n'
+    return { text: first + HELP }
+  })
+
+  on('command.run', { command: 'statusline-update' }, async $ => {
+    const done = await runInstaller($, true)
+    const version = await runLine($, 'Version')
+    const note = '플러그인 자체가 예전 버전이면 터미널에서 claude plugin update statusline@black-astro 를 실행하고 Claude Code를 다시 여세요.'
+    return { text: `${done}\n${version}\n${note}` }
+  })
+
+  on('command.run', { command: 'statusline-install' }, async $ => {
+    const done = await runInstaller($, false)
+    // A fresh install puts the status line script back, so app mode is over.
+    await update($, mode, () => 'script')
+    await $.store.set('mode', 'script')
+    await applyPlace($, await read($, place), 'script')
+    return { text: `${done}\nClaude Code를 다시 열면 상태줄이 나타납니다. 마스코트는 /statusline-roll 로 뽑으세요.` }
   })
 
   on('command.run', { command: 'statusline-place' }, async ($, e) => {
