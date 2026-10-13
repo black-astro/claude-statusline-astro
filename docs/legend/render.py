@@ -383,6 +383,36 @@ def theme_rainbow(keys):
     return [_hsl2hex(h + d, sat, 0.68) for d in (-42, -28, -14, 0, 14, 28, 42)]
 
 
+def hue_spread(centre, half, sat, light):
+    """Seven hues from centre - half to centre + half, one saturation and lightness."""
+    return [_hsl2hex(centre + k * half / 3, sat, light) for k in (-3, -2, -1, 0, 1, 2, 3)]
+
+
+# Six theme rainbows per legend, in LEGEND order. The in-app mascot wears one
+# at a time and moves to another now and then, at random; the first is the
+# palette's own rainbow (theme_rainbow). Picked by the maintainer from
+# legend-themes.html.
+def legend_themes():
+    own = [theme_rainbow(PALETTES[name]) for name in LEGEND_PALETTES]
+    return [
+        [('지금', own[0]), ('선셋 골드', hue_spread(35, 50, 0.85, 0.62)), ('샴페인', hue_spread(45, 18, 0.55, 0.78)),
+         ('태양', hue_spread(28, 30, 0.95, 0.58)), ('황금 무지개', hue_spread(50, 80, 0.8, 0.68)),
+         ('화이트 골드', hue_spread(48, 14, 0.7, 0.86))],
+        [('지금', own[1]), ('지옥불', hue_spread(15, 25, 0.95, 0.55)), ('블러드', hue_spread(355, 15, 0.85, 0.5)),
+         ('진홍 보라', hue_spread(335, 35, 0.8, 0.6)), ('루비', hue_spread(350, 20, 0.75, 0.7)),
+         ('용암', hue_spread(20, 40, 1, 0.52))],
+        [('지금', own[2]), ('은빛 라벤더', hue_spread(255, 20, 0.35, 0.78)), ('자수정', hue_spread(280, 25, 0.8, 0.6)),
+         ('은하', hue_spread(240, 45, 0.75, 0.65)), ('다크 로열', hue_spread(270, 20, 0.9, 0.55)),
+         ('어둠의 왕관', hue_spread(270, 24, 0.8, 0.6)[:6] + ['#f3cf68'])],
+        [('지금', own[3]), ('하늘 파스텔', hue_spread(205, 20, 0.7, 0.8)), ('오로라', hue_spread(190, 60, 0.75, 0.68)),
+         ('딥 오션', hue_spread(225, 20, 0.85, 0.58)), ('아이스', hue_spread(195, 15, 0.5, 0.82)),
+         ('천상', hue_spread(210, 30, 0.6, 0.86))],
+        [('지금', own[4]), ('에메랄드', hue_spread(150, 20, 0.8, 0.55)), ('독 라임', hue_spread(95, 30, 0.9, 0.6)),
+         ('비취', hue_spread(165, 25, 0.6, 0.65)), ('숲', hue_spread(130, 35, 0.55, 0.55)),
+         ('용의 숨결', hue_spread(135, 30, 0.8, 0.58)[:5] + ['#f3cf68', '#f3af68'])],
+    ]
+
+
 # What the in-app mascot says, by tier. The higher the tier, the better it
 # talks: common only makes noises, uncommon chats in 반말, rare is polite,
 # unique is sure of itself and legend speaks like a butler. Rare and above
@@ -468,7 +498,7 @@ def mod_data():
     import json
     tiers = ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']
     faces = {t: [{'name': n, 'frames': f} for n, f in FACES[t]] for t in tiers}
-    shimmer = [theme_rainbow(PALETTES[LEGEND_PALETTES[i]]) for i in range(len(FACES['legend']))]
+    shimmer = [[colors for _, colors in themes] for themes in legend_themes()]
     flat = {'common': xterm_hex(253), 'uncommon': xterm_hex(120), 'rare': xterm_hex(117),
             'dev': xterm_hex(51), 'error': xterm_hex(203)}
     talk = {t: {**MOD_TALK[t], 'quiz': [{'q': q, 'a': a} for q, a in MOD_TALK[t]['quiz']]} for t in tiers}
@@ -492,8 +522,9 @@ def mod_data():
         '',
         'export const ERROR_FRAMES: string[] = ' + dump(FACES['error'][0][1]),
         '',
-        '// Seven hues around each legend palette colour, walked one letter every 100 ms.',
-        'export const SHIMMER: string[][] = ' + dump(shimmer),
+        '// Six theme rainbows per legend, seven hues each, walked one letter every',
+        '// 100 ms; the mascot moves from one to another at random now and then.',
+        'export const SHIMMER: string[][][] = ' + dump(shimmer),
         '',
         '// Unique wears this ramp stretched across the text, fixed.',
         'export const UNIQUE_RAMP: string[] = ' + dump(ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS)),

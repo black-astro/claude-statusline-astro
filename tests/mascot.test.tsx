@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import { hmacHex, shortModel } from '../hooks/mascot'
-import { FACES, TALK } from '../hooks/mascot-data'
+import { FACES, SHIMMER, TALK } from '../hooks/mascot-data'
 
 // A key shaped like the ones the hooks make: 64 hex characters.
 const KEY = '0123456789abcdef'.repeat(4)
@@ -306,4 +306,27 @@ test('the commands answer by themselves: scripts run, colours stripped, no turn 
   const installed = await $.command.run({ command: 'statusline-install', args: '' })
   expect(ran.some(a => a.some(x => x.endsWith('install.ps1')) && !a.includes('-ScriptsOnly'))).toBe(true)
   expect(installed.text).toContain('Done.')
+})
+
+test('a legend moves between its six theme rainbows, one every 15 s, never the same twice running', async ($, on) => {
+  await machine(on, { tier: 'legend', index: 3 })
+  await $.session.start(start)
+  const ui = await $.ui.mount(RIGHT)
+  const themes = SHIMMER[3]!
+  expect(themes).toHaveLength(6)
+  // Which theme the face wears now, read from the colours of its first seven letters.
+  const worn = async () => {
+    const colors = (await ui.findAll({ type: 'Text', in: 'mascot' })).slice(0, 7).map(t => String(t.props.color))
+    return themes.findIndex(theme => colors.every(c => theme.includes(c)))
+  }
+  const seen: number[] = []
+  for (let slot = 0; slot < 8; slot++) {
+    const at = await worn()
+    expect(at).toBeGreaterThanOrEqual(0)
+    if (seen.length > 0) expect(at).not.toBe(seen[seen.length - 1])
+    seen.push(at)
+    await ui.advance(15_000)
+  }
+  expect(new Set(seen).size).toBeGreaterThan(2)
+  await ui.unmount()
 })
