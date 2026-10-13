@@ -346,47 +346,153 @@ def readme_tables():
     return '\n'.join(out)
 
 
-def talk_pools(sh_path):
-    """The spoken lines as statusline.sh keeps them (TALK_<KIND>_<TIER>='a|b')."""
-    import re
-    pools = {}
-    with open(sh_path, encoding='utf-8') as fh:
-        for line in fh:
-            m = re.match(r"^TALK_([A-Z]+)(?:_([A-Z]+))?='(.*)'$", line.rstrip('\r\n'))
-            if m:
-                kind, tier, body = m.group(1).lower(), (m.group(2) or '').lower(), m.group(3)
-                if kind == 'error':
-                    pools['error'] = body.split('|')
-                else:
-                    pools.setdefault(kind, {})[tier] = body.split('|')
-    return pools
+def _rgb2hsl(r, g, b):
+    r, g, b = r / 255, g / 255, b / 255
+    M, m = max(r, g, b), min(r, g, b)
+    h = s = 0.0
+    l = (M + m) / 2
+    if M != m:
+        d = M - m
+        s = d / (2 - M - m) if l > .5 else d / (M + m)
+        if M == r:
+            h = (g - b) / d + (6 if g < b else 0)
+        elif M == g:
+            h = (b - r) / d + 2
+        else:
+            h = (r - g) / d + 4
+        h *= 60
+    return h, s, l
 
 
-def mod_data(sh_path):
-    """hooks/mascot-data.ts: what the in-app mascot draws, from the same sources."""
+def _hsl2hex(h, s, l):
+    h = h % 360
+    c = (1 - abs(2 * l - 1)) * s
+    x = c * (1 - abs((h / 60) % 2 - 1))
+    m = l - c / 2
+    r, g, b = [(c, x, 0), (x, c, 0), (0, c, x), (0, x, c), (x, 0, c), (c, 0, x)][int(h // 60) % 6]
+    return '#%02x%02x%02x' % tuple(max(0, min(255, int((v + m) * 255 + 0.5))) for v in (r, g, b))
+
+
+def theme_rainbow(keys):
+    """Seven hues around the palette's own colour, the way the effort picker
+    walks "max" through its rainbow but kept in the legend's colour family."""
+    r = ramp(keys)
+    mid = r[len(r) // 4]
+    h, s, _ = _rgb2hsl(int(mid[1:3], 16), int(mid[3:5], 16), int(mid[5:7], 16))
+    sat = max(0.35, min(0.85, s))
+    return [_hsl2hex(h + d, sat, 0.68) for d in (-42, -28, -14, 0, 14, 28, 42)]
+
+
+# What the in-app mascot says, by tier. The higher the tier, the better it
+# talks: common only makes noises, uncommon chats in 반말, rare is polite,
+# unique is sure of itself and legend speaks like a butler. Rare and above
+# also say what the turn is doing (reading, editing, running...), and while
+# a turn runs the line changes every ten seconds, with a riddle now and then
+# whose answer follows a few seconds later.
+#   work      lines while a turn runs
+#   quiz      (question, answer) riddles mixed into the work lines
+#   activity  what the latest tool call is doing, by kind
+#   done      right after the turn ends (one minute)
+#   notify    when something waits on the person
+#   error     when the turn failed
+MOD_TALK = {
+    'common': {
+        'work': ['끙...', '낑낑', '웅...', '냥냥 열일 중', '뿌... 배고프다뿌', '삐약삐약 열심히', '꼬리 흔들며 일하는 중', '쿨쿨... 아, 일하는 중!'],
+        'quiz': [],
+        'activity': {},
+        'done': ['왕!', '냥!', '뿌!', '삐약!', '다 했다냥', '꼬리 살랑살랑'],
+        'notify': ['앙?', '웅?', '왕왕?', '냥? 이거 봐줘'],
+        'error': ['깨갱...', '냐앙... 망했다냥'],
+    },
+    'uncommon': {
+        'work': ['하는 중!', '조금만!', '열일 중!', '거의 다 했어!', '집중 모드 ON!', '끝나면 간식 줘!', '커피 한 잔 어때?'],
+        'quiz': [('소가 웃으면?', '우하하'), ('바나나가 웃으면?', '바나나킥'), ('왕이 넘어지면?', '킹콩')],
+        'activity': {},
+        'done': ['다했다!', '끝!', '됐다!', '오케이, 확인해 봐!', '히히, 잘했지?'],
+        'notify': ['저기요!', '잠깐만!', '이거 좀 봐줘!'],
+        'error': ['앗, 실수...!', '으앗, 다시 해볼래?'],
+    },
+    'rare': {
+        'work': ['작업 중이에요', '조금만 기다려요', '거의 다 왔어요', '차근차근 하고 있어요', '잘 되고 있어요'],
+        'quiz': [('세상에서 제일 빠른 닭은?', '후다닭'), ('개가 사람을 가르치면?', '개인지도'), ('소금이 죽으면?', '죽염'), ('미소의 반대말은?', '당기소')],
+        'activity': {
+            'read': '파일을 읽어 보는 중이에요', 'search': '찾아보는 중이에요', 'edit': '코드를 고치고 있어요',
+            'run': '명령을 실행하고 있어요', 'web': '웹에서 찾아보고 있어요', 'agent': '도우미한테 맡겨 뒀어요',
+        },
+        'done': ['다 됐어요', '끝났어요', '완료했어요! 한번 봐 주세요', '해냈어요!'],
+        'notify': ['확인해 주세요', '봐 주셔야 할 게 있어요'],
+        'error': ['앗, 실패했어요...', '잘 안 됐어요. 한번 봐 주세요'],
+    },
+    'unique': {
+        'work': ['처리하고 있어요!', '꼼꼼하게 진행 중입니다!', '금방 끝내겠습니다!', '지금 흐름 좋아요!', '조금만 기다려 주세요, 거의 다 왔어요!'],
+        'quiz': [('오리를 생으로 먹으면?', '회오리!'), ('왕이 넘어지면?', '킹콩!'), ('세상에서 가장 뜨거운 과일은?', '천도복숭아!'),
+                 ('진짜 문제투성이인 것은?', '시험지!'), ('세상에서 가장 쉬운 숫자는?', '십구만(190000)!')],
+        'activity': {
+            'read': '관련 파일을 꼼꼼히 읽고 있어요!', 'search': '필요한 부분을 찾아내는 중입니다!', 'edit': '코드를 깔끔하게 다듬는 중입니다!',
+            'run': '명령을 돌려서 직접 확인하고 있어요!', 'web': '웹에서 자료를 모으는 중입니다!', 'agent': '도우미에게 일을 나눠 맡겼어요!',
+        },
+        'done': ['작업 완료했어요! 확인해 보세요!', '깔끔하게 끝냈습니다!', '다 끝냈어요. 결과 한번 봐 주세요!', '마무리됐는지 확인 부탁해요!'],
+        'notify': ['확인 부탁해요!', '잠시 봐 주세요!', '결정이 필요해요!'],
+        'error': ['막혔어요... 원인을 같이 봐 주세요', '실패했어요. 방법을 다시 찾아볼게요'],
+    },
+    'legend': {
+        'work': ['작업을 진행하고 있습니다. 잠시만 기다려 주십시오.', '흐름이 좋습니다. 곧 마무리하겠습니다.', '하나씩 확실하게 처리하고 있습니다.',
+                 '세부까지 꼼꼼히 살피는 중입니다.', '맡겨 주신 일, 정성껏 다루고 있습니다.'],
+        'quiz': [('넌센스 한 문제 드리겠습니다. 물고기의 반대말은?', '정답은 불고기입니다.'),
+                 ('넌센스 한 문제 드리겠습니다. 세상에서 가장 빠른 새는?', '정답은 눈 깜짝할 새입니다.'),
+                 ('넌센스 한 문제 드리겠습니다. 가장 억울한 도형은?', '정답은 원통입니다.'),
+                 ('넌센스 한 문제 드리겠습니다. 사과가 웃으면?', '정답은 풋사과입니다.'),
+                 ('넌센스 한 문제 드리겠습니다. 칼이 정색하면?', '정답은 검정색입니다.')],
+        'activity': {
+            'read': '관련 파일을 차례로 검토하고 있습니다.', 'search': '필요한 단서를 찾고 있습니다.', 'edit': '코드를 정성껏 다듬고 있습니다.',
+            'run': '명령을 실행해 결과를 직접 확인하고 있습니다.', 'web': '웹에서 최신 자료를 살펴보고 있습니다.', 'agent': '도우미에게 일부를 맡겨 함께 진행하고 있습니다.',
+        },
+        'done': ['요청하신 작업을 모두 마쳤습니다. 결과를 확인해 주십시오.', '작업을 성공적으로 마무리했습니다.',
+                 '마무리되었습니다. 의도하신 대로 되었는지 확인해 주십시오.', '모두 끝냈습니다. 더 필요하신 것이 있으면 말씀해 주십시오.'],
+        'notify': ['확인이 필요합니다. 잠시 살펴봐 주십시오.', '결정을 기다리고 있습니다.'],
+        'error': ['문제가 생겼습니다. 원인을 함께 살펴봐 주십시오.', '작업이 중단되었습니다. 확인 부탁드립니다.'],
+    },
+    'dev': {
+        'work': ['빌드 도는 중.', '컴파일 중.', '테스트 도는 중.'],
+        'quiz': [],
+        'activity': {'read': 'grep 중.', 'search': 'grep 중.', 'edit': '패치 적용 중.', 'run': '실행 중.', 'web': 'fetch 중.', 'agent': '워커 띄움.'},
+        'done': ['빌드 통과.', '커밋하시죠.', '배포 준비 완료.', '테스트 전부 초록불.'],
+        'notify': ['입력 대기 중.', '확인 요망.'],
+        'error': ['빌드 실패.', '로그 확인 요망.'],
+    },
+}
+
+
+def mod_data():
+    """hooks/mascot-data.ts: what the in-app mascot draws and says."""
     import json
     tiers = ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']
     faces = {t: [{'name': n, 'frames': f} for n, f in FACES[t]] for t in tiers}
-    shimmer = []
-    for i in range(len(FACES['legend'])):
-        r = ramp(PALETTES[LEGEND_PALETTES[i]])
-        shimmer.append([r[k * len(r) // 7] for k in range(7)])
+    shimmer = [theme_rainbow(PALETTES[LEGEND_PALETTES[i]]) for i in range(len(FACES['legend']))]
     flat = {'common': xterm_hex(253), 'uncommon': xterm_hex(120), 'rare': xterm_hex(117),
             'dev': xterm_hex(51), 'error': xterm_hex(203)}
-    talk = talk_pools(sh_path)
+    talk = {t: {**MOD_TALK[t], 'quiz': [{'q': q, 'a': a} for q, a in MOD_TALK[t]['quiz']]} for t in tiers}
     dump = lambda v: json.dumps(v, ensure_ascii=False, indent=2)
     return '\n'.join([
-        '// Generated by docs/legend/render.py (python render.py mod <out>): edit the',
-        '// faces and palettes there and the spoken lines in scripts/statusline.sh.',
+        '// Generated by docs/legend/render.py (python render.py mod <out>): edit it there.',
         '',
         "export type Tier = 'common' | 'uncommon' | 'rare' | 'unique' | 'legend' | 'dev'",
-        "export type TalkKind = 'work' | 'done' | 'notify'",
+        "export type Activity = 'read' | 'search' | 'edit' | 'run' | 'web' | 'agent'",
+        'export type Riddle = { q: string; a: string }',
+        'export type TierTalk = {',
+        '  work: string[]',
+        '  quiz: Riddle[]',
+        '  activity: Partial<Record<Activity, string>>',
+        '  done: string[]',
+        '  notify: string[]',
+        '  error: string[]',
+        '}',
         '',
         'export const FACES: Record<Tier, { name: string; frames: string[] }[]> = ' + dump(faces),
         '',
         'export const ERROR_FRAMES: string[] = ' + dump(FACES['error'][0][1]),
         '',
-        '// Seven shades of each legend palette, taken evenly around its loop.',
+        '// Seven hues around each legend palette colour, walked one letter every 100 ms.',
         'export const SHIMMER: string[][] = ' + dump(shimmer),
         '',
         '// Unique wears this ramp stretched across the text, fixed.',
@@ -394,9 +500,7 @@ def mod_data(sh_path):
         '',
         'export const FLAT: Record<string, string> = ' + dump(flat),
         '',
-        'export const TALK: Record<TalkKind, Record<Tier, string[]>> = ' + dump({k: talk[k] for k in ['work', 'done', 'notify']}),
-        '',
-        'export const TALK_ERROR: string[] = ' + dump(talk['error']),
+        'export const TALK: Record<Tier, TierTalk> = ' + dump(talk),
         '',
     ])
 
@@ -425,7 +529,7 @@ if __name__ == '__main__':
         outdir = sys.argv[2]
         os.makedirs(outdir, exist_ok=True)
         for i, (name, frames) in enumerate(FACES['legend']):
-            ramp_ = ramp(PALETTES[LEGEND_PALETTES[i]])
+            ramp_ = theme_rainbow(PALETTES[LEGEND_PALETTES[i]])
             with open(os.path.join(outdir, 'legend-%d.svg' % (i + 1)), 'w', encoding='utf-8', newline='\n') as fh:
                 fh.write(svg(frames[0], ramp_))
         face = FACES['unique'][0][1][0]
@@ -435,15 +539,13 @@ if __name__ == '__main__':
             fh.write(svg(face, stretched))
         for i, name in enumerate(LEGEND_PALETTES):
             with open(os.path.join(outdir, 'swatch-%d.svg' % (i + 1)), 'w', encoding='utf-8', newline=chr(10)) as fh:
-                fh.write(swatch_svg(ramp(PALETTES[name])))
+                fh.write(swatch_svg(theme_rainbow(PALETTES[name])))
         with open(os.path.join(outdir, 'swatch-unique.svg'), 'w', encoding='utf-8', newline=chr(10)) as fh:
             fh.write(swatch_svg(lin))
         print('wrote', len(FACES['legend']), 'legend svgs + unique.svg + swatches')
     elif cmd == 'mod':
-        here = os.path.dirname(os.path.abspath(__file__))
-        sh = os.path.join(here, '..', '..', 'scripts', 'statusline.sh')
         with open(sys.argv[2], 'w', encoding='utf-8', newline=chr(10)) as fh:
-            fh.write(mod_data(sh))
+            fh.write(mod_data())
         print('wrote', sys.argv[2])
     elif cmd == 'count':
         for t in TIER_ORDER:

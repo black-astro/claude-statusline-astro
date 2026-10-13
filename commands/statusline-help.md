@@ -13,6 +13,7 @@ allowed-tools: Bash
   /statusline-roll      마스코트 뽑기 (하루 한 번)
   /statusline-today     지금 쓰고 있는 마스코트 확인
   /statusline-place     마스코트 위치 (right 아래 오른쪽 · left 아래 왼쪽 · above 위 · line 상태줄 끝)
+  /statusline-mode      정보 줄 방식 (script 상태줄 스크립트 · app 플러그인이 직접, 스크립트 멈춤)
   /statusline-update    최신 버전으로 업데이트
   /statusline-help      이 도움말
 
@@ -30,10 +31,11 @@ allowed-tools: Bash
   기본 자리는 프롬프트 아래 오른쪽 (플러그인 설치 + 최신 Claude Code).
   그 밖에는 상태줄 끝에 나옵니다. /statusline-place 로 자리를 바꿉니다.
   어느 세션을 열어도 같은 얼굴, 작업 중·완료 직후·확인 요청·실패 때만 말합니다.
+  작업 중에는 대사가 10초마다 바뀌고 넌센스 퀴즈도 냅니다. 등급이 높을수록 말을 잘합니다.
 
 마스코트 뽑기
   커먼 40% · 언커먼 35% · 레어 18% · 유니크 6% · 레전드 1%
-  얼굴은 51종이고 하나마다 영어 이름이 있습니다. 레전드는 글자마다 색이 반짝이며 흐릅니다.
+  얼굴은 51종이고 하나마다 영어 이름이 있습니다. 레전드는 테마색 무지개가 글자마다 반짝이며 흐릅니다.
   뽑기는 하루 한 번, 직접 돌립니다. 뽑기 전까지 지금 얼굴이 유지됩니다.
 
 옵션 (~/.claude/settings.json 의 "env" 에 넣고 Claude Code 재시작)

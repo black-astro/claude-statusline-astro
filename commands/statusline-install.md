@@ -80,3 +80,6 @@ Do this yourself with tools — do not just print instructions.
    sits under the prompt on the right and legends shimmer there; the status
    line then leaves its own copy out. `/statusline-place right|left|above|line`
    moves it (`line` puts it back at the end of the status line).
+   `/statusline-mode app` lets the plugin draw the info line too and switches
+   the status line command off; `/statusline-mode script` restores it. Running
+   this install again also restores the script.
