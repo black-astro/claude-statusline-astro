@@ -9,8 +9,8 @@
     {
       "name": "statusline",
       "source": "./",
-      "description": "Cross-platform colored status line for Claude Code: directory, git branch, model, context usage, 5-hour rate limit with reset countdown, cross-session usage sync, and a rarity-rolled mascot that shows whether the turn is running, done or failed.",
-      "version": "1.7.6",
+      "description": "Cross-platform colored status line for Claude Code: directory, git branch, model, context usage, 5-hour rate limit with reset countdown, cross-session usage sync, and a rarity-rolled mascot drawn under the prompt that shows whether the turn is running, done or failed (legends shimmer every 100 ms).",
+      "version": "1.8.0",
       "author": {
         "name": "black-astro"
       },

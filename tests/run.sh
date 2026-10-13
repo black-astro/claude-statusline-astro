@@ -141,6 +141,10 @@ rm -f "$CACHE"/rl-peer*.txt
 echo "== 8. options through the environment"
 STATUSLINE_MASCOT=0 sh "$ROOT/scripts/statusline.sh" < /dev/null > /dev/null   # sanity: runs
 if printf '%s' "$P" | STATUSLINE_MASCOT=0 $SH | strip | grep -q "$face_sh"; then bad "STATUSLINE_MASCOT=0 still shows the face" ""; else ok "STATUSLINE_MASCOT=0 hides the mascot"; fi
+if printf '%s' "$P" | STATUSLINE_MASCOT_BY_MOD=1 $SH | strip | grep -q "$face_sh"; then bad "sh draws the face the plugin already draws" ""; else ok "sh leaves the face to the plugin"; fi
+if [ "$HAVE_PS" -eq 1 ]; then
+    if printf '%s' "$P" | STATUSLINE_MASCOT_BY_MOD=1 $PS | strip | grep -q "$face_sh"; then bad "ps draws the face the plugin already draws" ""; else ok "ps leaves the face to the plugin"; fi
+fi
 printf 'working %s\n' "$(date +%s)" > "$CACHE/mascot-testsess.txt"
 with_talk=$(printf '%s' "$P" | $SH | strip)
 no_talk=$(printf '%s' "$P" | STATUSLINE_TALK=0 $SH | strip)
@@ -181,6 +185,12 @@ printf '%s' "$long" | $SH | strip | grep -q 'DIR …' && ok "sh truncates from t
 echo "== 12. every frame of a face has the same width"
 if command -v python >/dev/null 2>&1; then
     python docs/legend/render.py check | grep -q '^ok' && ok "render.py width check" || bad "width check" "$(python docs/legend/render.py check)"
+fi
+
+echo "== 13. the plugin's mascot data is what render.py makes now"
+if command -v python >/dev/null 2>&1; then
+    python docs/legend/render.py mod "$TMP/mascot-data.ts" > /dev/null
+    cmp -s "$TMP/mascot-data.ts" hooks/mascot-data.ts && ok "hooks/mascot-data.ts is up to date" || bad "hooks/mascot-data.ts is stale" "run: python docs/legend/render.py mod hooks/mascot-data.ts"
 fi
 
 echo

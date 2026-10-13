@@ -21,7 +21,7 @@ param(
     [string]$Face = ''
 )
 
-$StatuslineVersion = '1.7.6'
+$StatuslineVersion = '1.8.0'
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -81,6 +81,9 @@ switch ($env:STATUSLINE_MASCOT) { '0' { $ShowMascot = $false } '1' { $ShowMascot
 switch ($env:STATUSLINE_TALK) { '0' { $ShowMascotTalk = $false } '1' { $ShowMascotTalk = $true } }
 switch ($env:STATUSLINE_SEVEN_DAY) { '0' { $ShowSevenDay = $false } '1' { $ShowSevenDay = $true } }
 switch ($env:STATUSLINE_TRUE_COLOR) { '0' { $LegendTrueColor = $false } '1' { $LegendTrueColor = $true } }
+# The plugin draws the mascot under the prompt itself on a Claude Code that
+# can, and says so here; the line then leaves its own face out.
+if ($env:STATUSLINE_MASCOT_BY_MOD -eq '1') { $ShowMascot = $false }
 
 # Rarity odds in per-mille, highest first, totalling 1000. These are fixed on
 # purpose: everyone rolls against the same table, and editing them turns the roll

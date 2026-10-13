@@ -12,6 +12,7 @@ allowed-tools: Bash
   /statusline-install   설치 · 재설치
   /statusline-roll      마스코트 뽑기 (하루 한 번)
   /statusline-today     지금 쓰고 있는 마스코트 확인
+  /statusline-place     마스코트 위치 (right 아래 오른쪽 · left 아래 왼쪽 · above 위 · line 상태줄 끝)
   /statusline-update    최신 버전으로 업데이트
   /statusline-help      이 도움말
 
@@ -24,11 +25,15 @@ allowed-tools: Bash
   DIR    프로젝트 폴더        GIT   브랜치 (main·master 는 보라색)
   MODEL  쓰는 모델            CTX   컨텍스트 사용량 (실시간)
   5H     5시간 한도 + 남은 시간
-  맨 뒤  내 마스코트 — 어느 세션을 열어도 같은 얼굴, 작업 중·완료 직후·알림 때만 말합니다
+
+마스코트
+  기본 자리는 프롬프트 아래 오른쪽 (플러그인 설치 + 최신 Claude Code).
+  그 밖에는 상태줄 끝에 나옵니다. /statusline-place 로 자리를 바꿉니다.
+  어느 세션을 열어도 같은 얼굴, 작업 중·완료 직후·확인 요청·실패 때만 말합니다.
 
 마스코트 뽑기
   커먼 40% · 언커먼 35% · 레어 18% · 유니크 6% · 레전드 1%
-  얼굴은 51종이고 하나마다 영어 이름이 있습니다. 레전드는 글자마다 색이 흐릅니다.
+  얼굴은 51종이고 하나마다 영어 이름이 있습니다. 레전드는 글자마다 색이 반짝이며 흐릅니다.
   뽑기는 하루 한 번, 직접 돌립니다. 뽑기 전까지 지금 얼굴이 유지됩니다.
 
 옵션 (~/.claude/settings.json 의 "env" 에 넣고 Claude Code 재시작)
