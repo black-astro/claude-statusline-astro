@@ -13,7 +13,7 @@ allowed-tools: Bash
   /statusline-roll      마스코트 뽑기 (하루 한 번)
   /statusline-today     지금 쓰고 있는 마스코트 확인
   /statusline-place     마스코트 위치 (right 아래 오른쪽 · left 아래 왼쪽 · above 위 · line 상태줄 끝)
-  /statusline-mode      정보 줄 방식 (script 상태줄 스크립트 · app 플러그인이 직접, 스크립트 멈춤)
+  /statusline-mode      정보 줄 방식 (script 상태줄 스크립트 · app 플러그인이 프롬프트 위에 · app below 프롬프트 아래에)
   /statusline-update    최신 버전으로 업데이트
   /statusline-help      이 도움말
 

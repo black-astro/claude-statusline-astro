@@ -218,15 +218,34 @@ test('app mode draws the info line itself, switches the script off, and gives it
   expect(settings.statusLine.command).toBe('exit 0')
   expect(settings.theme).toBe('dark')
 
-  const hint = await $.ui.mount(HINT)
-  const line = (await hint.findAll({ type: 'Text' })).map(t => t.text).join('')
+  // By default the line takes the row of its own above the prompt, as one
+  // Text cut at the row's end, never wrapped.
+  const band = await $.ui.mount(ABOVE)
+  const whole = (await band.findAll({ type: 'Text' }))[0]
+  expect(whole?.props.wrap).toBe('truncate-end')
+  const line = whole?.text ?? ''
   expect(line).toContain('DIR my-project')
   expect(line).toContain('GIT main')
   expect(line).toContain('MODEL Opus 5.5')
   expect(line).toContain('42%')
   // The other session's newer window wins.
   expect(line).toContain('80%')
+  await band.unmount()
+  const hintAbove = await $.ui.mount(HINT)
+  expect(await hintAbove.find({ type: 'Text', text: 'engine' })).toBeDefined()
+  await hintAbove.unmount()
+
+  // Placed below, it moves under the prompt and leaves the band alone.
+  const below = await $.command.run({ command: 'statusline-mode', args: 'app below' })
+  expect(below.text).toContain('프롬프트 아래')
+  const hint = await $.ui.mount(HINT)
+  const under = (await hint.findAll({ type: 'Text' }))[0]
+  expect(under?.props.wrap).toBe('truncate-end')
+  expect(under?.text).toContain('DIR my-project')
   await hint.unmount()
+  const band2 = await $.ui.mount(ABOVE)
+  expect(await band2.find({ type: 'Text', text: 'engine' })).toBeDefined()
+  await band2.unmount()
 
   const off = await $.command.run({ command: 'statusline-mode', args: 'script' })
   expect(off.text).toContain('스크립트')

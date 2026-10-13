@@ -170,7 +170,7 @@ curl -fsSL https://raw.githubusercontent.com/black-astro/claude-statusline-astro
 | `/statusline-roll` | 마스코트 뽑기 (하루 한 번) |
 | `/statusline-today` | 지금 내 마스코트와 이름 보기 |
 | `/statusline-place` | 마스코트 위치 보기·바꾸기 |
-| `/statusline-mode` | 정보 줄을 그리는 방식 보기·바꾸기 ([앱 모드](#앱-모드)) |
+| `/statusline-mode` | 정보 줄을 그리는 방식과 위치 보기·바꾸기 ([앱 모드](#앱-모드)) |
 | `/statusline-update` | 최신 버전으로 업데이트 |
 | `/statusline-install` | 설치, 재설치 |
 | `/statusline-help` | 짧은 도움말 |
@@ -360,17 +360,19 @@ Claude Code의 effort `max` 표시처럼, 글자마다 다른 색이 0.1초마�
 평소에는 상태줄 스크립트가 1~2초마다 실행되며 정보 줄을 그립니다. 앱 모드를 켜면 정보 줄(`DIR`, `GIT`, `MODEL`, `CTX`, `5H`)까지 플러그인이 Claude Code 안에서 직접 그리고, 스크립트는 더 이상 실행되지 않습니다.
 
 ```
-/statusline-mode app       켜기
-/statusline-mode script    끄기 (원래대로)
+/statusline-mode app          켜기 (정보 줄은 프롬프트 바로 위)
+/statusline-mode app below    켜기 (정보 줄은 프롬프트 아래)
+/statusline-mode script       끄기 (원래대로)
 ```
 
 | | 스크립트 (기본) | 앱 모드 |
 | --- | --- | --- |
-| 정보 줄 위치 | 상태줄 | 프롬프트 아래 왼쪽 |
+| 정보 줄 위치 | 상태줄 | 프롬프트 바로 위 한 줄 (`below`면 프롬프트 아래) |
 | 컴퓨터 부담 | 스크립트가 계속 실행됨 | 거의 없음 |
 | 값이 바뀌는 속도 | 1~2초마다 | 2초마다, 작업이 끝나면 바로 |
 
 - 특히 Windows에서는 PowerShell이 계속 뜨지 않아서 가벼워집니다.
+- 프롬프트 바로 위에 두면 정보 줄이 한 줄을 통째로 써서 줄바꿈이 생기지 않습니다. `below`로 프롬프트 아래에 두면 `auto mode on` 같은 모드 표시와 같은 줄을 나눠 쓰기 때문에, 넘치는 부분은 끝이 `…`로 잘립니다.
 - 앱 모드는 `settings.json`의 상태줄 항목을 잠시 꺼 둡니다. 원래 설정은 따로 보관했다가 `/statusline-mode script`로 그대로 되돌립니다.
 - 플러그인을 지우기 전에는 꼭 `/statusline-mode script`로 되돌리세요. 되돌리지 않고 지웠다면 `/statusline-install`로 상태줄을 다시 설치하면 됩니다.
 - 플러그인으로 설치한 최신 Claude Code에서만 됩니다.
@@ -390,8 +392,8 @@ Claude Code를 완전히 닫았다가 다시 여세요. 그래도 없으면 `/st
 - Claude Code를 최신 버전으로 올리세요.
 - `/statusline-place`로 위치가 `line`으로 되어 있지 않은지 확인하세요.
 
-**앱 모드를 켰는데 정보 줄이 안 보입니다.**
-창이 좁으면 잘릴 수 있습니다. 창을 넓히거나 `/statusline-mode script`로 되돌리세요.
+**앱 모드에서 정보 줄이 잘립니다.**
+`below`로 두면 모드 표시와 한 줄을 나눠 써서 끝이 잘립니다. `/statusline-mode app`으로 프롬프트 위 한 줄에 두거나, 창을 넓히세요.
 
 **플러그인을 지웠더니 상태줄이 사라졌습니다.**
 앱 모드에서 지운 경우입니다. `/statusline-install`을 실행하면 다시 나타납니다.
