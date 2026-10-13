@@ -230,8 +230,12 @@ async function faceProps($: EngineInterface): Promise<FaceProps | null> {
   const base = { frames: face.frames, talk, animate: t.state === 'working' }
 
   if (!s.isColored) return { ...base, paint: 'plain', colors: [], bold: false }
-  // Legend wears seven hues of its own colour, bold, walked like "max".
-  if (r.tier === 'legend') return { ...base, paint: 'shimmer', colors: SHIMMER[r.index] ?? [], bold: true }
+  // Legend wears seven hues of one of its six theme rainbows, bold, walked
+  // like "max", and moves to another rainbow every 15 s.
+  if (r.tier === 'legend') {
+    const themes = SHIMMER[r.index] ?? []
+    return { ...base, paint: 'shimmer', colors: themes[0] ?? [], themes, bold: true }
+  }
   if (r.tier === 'unique') return { ...base, paint: 'gradient', colors: UNIQUE_RAMP, bold: false }
   return { ...base, paint: 'flat', colors: [FLAT[r.tier] ?? ''], bold: r.tier === 'dev' }
 }
