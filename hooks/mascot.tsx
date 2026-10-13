@@ -314,6 +314,20 @@ function leafName(path: string): string {
   return name.length > DIR_MAX ? `…${name.slice(name.length - DIR_MAX + 1)}` : name
 }
 
+// The model as family and version only, the status line scripts' rule:
+// "Opus 5.5 (1M context)" and "claude-opus-5-5" both read opus5.5.
+export function shortModel(name: string): string {
+  const low = name.toLowerCase().replace(/\([^)]*\)|\[[^\]]*\]/g, '').replaceAll('claude', '')
+  const fam = /[a-z]+/.exec(low)
+  if (fam === null) return name
+  const nums: string[] = []
+  for (const d of low.slice(fam.index + fam[0].length).matchAll(/[0-9]+/g)) {
+    if (nums.length >= 2 || d[0].length > 3) break
+    nums.push(d[0])
+  }
+  return fam[0] + nums.join('.')
+}
+
 function epochOf(iso: string | undefined): number {
   if (iso === undefined) return 0
   const ms = Date.parse(iso)
@@ -388,7 +402,7 @@ async function refreshInfo($: EngineInterface): Promise<void> {
   const next: LineInfo = {
     project: leafName(git.root || cwd),
     branch: git.branch,
-    model: await $.session.model(),
+    model: shortModel(await $.session.model()),
     context: usage.context.percent === undefined ? null : Math.round(usage.context.percent),
     fiveHour: five,
     sevenDay: seven,
@@ -491,11 +505,11 @@ export const register: Register = on => {
     })
     const savedPlace = await $.store.get('place')
     const where = typeof savedPlace === 'string' && isPlace(savedPlace) ? savedPlace : DEFAULT_PLACE
-    // App mode holds only while the status line command is really switched
-    // off; a reinstall puts the script back, and then the script draws.
-    const savedMode = await $.store.get('mode')
+    // settings.json alone says which it is: app mode is the status line
+    // command switched off, whoever switched it (an earlier install of this
+    // plugin included), and a reinstall that puts the script back ends it.
     const json = await readSettingsFile($)
-    const how: LineMode = savedMode === 'app' && json?.statusLine?.command === APP_COMMAND ? 'app' : 'script'
+    const how: LineMode = json?.statusLine?.command === APP_COMMAND ? 'app' : 'script'
     const savedLine = await $.store.get('linePlace')
     const lineAt = typeof savedLine === 'string' && isLinePlace(savedLine) ? savedLine : 'above'
     await update($, place, () => where)

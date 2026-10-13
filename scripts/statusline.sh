@@ -20,7 +20,7 @@ BAR_GAP=''      # cells are flush; the glyph provides its own separation
 BAR_PAD=''      # spacing just inside the brackets
 DIR_MAX=32      # project name is left-truncated past this many characters
 
-STATUSLINE_VERSION='1.10.0'
+STATUSLINE_VERSION='1.10.1'
 
 # Run with no arguments (the way Claude Code calls it) to print the status line.
 #   --roll      roll today's mascot (once a day) and exit
@@ -214,6 +214,24 @@ else
 fi
 
 [ -z "$model" ] && model='-'
+# The model as family and version only: "Opus 5.5 (1M context)" and
+# "claude-opus-5-5" both read opus5.5. A name with no family stays as it is.
+model=$(printf '%s' "$model" | awk '{
+    s = tolower($0)
+    gsub(/\([^)]*\)|\[[^]]*\]/, "", s)
+    gsub(/claude/, "", s)
+    if (!match(s, /[a-z]+/)) { print $0; exit }
+    fam = substr(s, RSTART, RLENGTH)
+    rest = substr(s, RSTART + RLENGTH)
+    v = ""; n = 0
+    while (n < 2 && match(rest, /[0-9]+/)) {
+        d = substr(rest, RSTART, RLENGTH)
+        rest = substr(rest, RSTART + RLENGTH)
+        if (length(d) > 3) break
+        v = v (n ? "." : "") d; n++
+    }
+    print fam v
+}')
 
 now=$(date +%s 2>/dev/null)
 case "$now" in ''|*[!0-9]*) now=0 ;; esac
