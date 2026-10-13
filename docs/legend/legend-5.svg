@@ -1,19 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="230" height="42" viewBox="0 0 230 42" role="img">
 <rect width="100%" height="100%" rx="6" fill="#0d1117"/>
 <g font-family="'Segoe UI Symbol','Malgun Gothic','Noto Sans CJK KR','Apple SD Gothic Neo','Noto Sans Symbols 2','DejaVu Sans',monospace" font-size="22" dominant-baseline="middle">
-<text x="10.0" y="22.0" fill="#0f7a4a">⋘</text>
-<text x="23.6" y="22.0" fill="#10804e">°</text>
-<text x="37.2" y="22.0" fill="#118753"> </text>
-<text x="50.8" y="22.0" fill="#128d57">◆</text>
-<text x="64.4" y="22.0" fill="#13945c">（</text>
-<text x="86.4" y="22.0" fill="#159a60">◈</text>
-<text x="100.0" y="22.0" fill="#16a065">ω</text>
-<text x="113.6" y="22.0" fill="#17a769">◈</text>
-<text x="127.2" y="22.0" fill="#1bad6e">)</text>
-<text x="140.8" y="22.0" fill="#21b473">ζ</text>
-<text x="154.4" y="22.0" fill="#27ba78"> </text>
-<text x="168.0" y="22.0" fill="#2cc07e">◆</text>
-<text x="181.6" y="22.0" fill="#32c783"> </text>
-<text x="195.2" y="22.0" fill="#37cd88">°</text>
-<text x="208.8" y="22.0" fill="#3dd38d">⋙</text>
+<text x="10.0" y="22.0" fill="#85e675">⋘</text>
+<text x="23.6" y="22.0" fill="#75e67f">°</text>
+<text x="37.2" y="22.0" fill="#75e69a"> </text>
+<text x="50.8" y="22.0" fill="#75e6b4">◆</text>
+<text x="64.4" y="22.0" fill="#75e6ce">（</text>
+<text x="86.4" y="22.0" fill="#75e3e6">◈</text>
+<text x="100.0" y="22.0" fill="#75c9e6">ω</text>
+<text x="113.6" y="22.0" fill="#85e675">◈</text>
+<text x="127.2" y="22.0" fill="#75e67f">)</text>
+<text x="140.8" y="22.0" fill="#75e69a">ζ</text>
+<text x="154.4" y="22.0" fill="#75e6b4"> </text>
+<text x="168.0" y="22.0" fill="#75e6ce">◆</text>
+<text x="181.6" y="22.0" fill="#75e3e6"> </text>
+<text x="195.2" y="22.0" fill="#75c9e6">°</text>
+<text x="208.8" y="22.0" fill="#85e675">⋙</text>
 </g></svg>

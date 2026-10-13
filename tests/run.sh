@@ -19,6 +19,9 @@ case "$(uname -s 2>/dev/null)" in
     MINGW*|MSYS*|CYGWIN*) CACHE=$(cd "$TMP" && pwd -W 2>/dev/null || pwd)/cache ;;
 esac
 export STATUSLINE_CACHE_DIR="$CACHE"
+# A Claude Code session with the plugin loaded sets this for everything it
+# starts, this suite included; the scripts must be tested drawing their face.
+unset STATUSLINE_MASCOT_BY_MOD
 
 # The project path in the payload is what Claude Code would send: a native
 # Windows path under MSYS, so PowerShell can resolve it too.
