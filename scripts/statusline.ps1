@@ -21,7 +21,7 @@ param(
     [string]$Face = ''
 )
 
-$StatuslineVersion = '1.10.1'
+$StatuslineVersion = '1.11.0'
 
 $ErrorActionPreference = 'SilentlyContinue'
 

@@ -8,6 +8,7 @@ Claude Code 화면 아래에 **지금 상태를 한 줄로** 보여 주고, 프�
 - 마스코트는 하루에 한 번 뽑는 얼굴입니다. 일하는 동안 표정이 바뀌고, 지금 하는 일을 말해 주거나 넌센스 퀴즈를 내기도 합니다. 등급이 높을수록 말솜씨가 좋습니다.
 - 가장 드문 레전드 등급은 글자 하나하나가 자기 테마색 무지개로 반짝입니다.
 - Windows, macOS, Linux 어디서나 같은 모양입니다.
+- 토큰을 쓰지 않습니다. 화면에 그리는 것과 명령 모두 Claude를 거치지 않습니다.
 
 > 개인이 만든 프로젝트입니다. Anthropic과는 관계가 없습니다.
 
@@ -43,7 +44,9 @@ Claude Code를 열고 채팅창에 아래 세 줄을 **한 줄씩** 입력합니
 /statusline-install
 ```
 
-이 방법으로 설치해야 마스코트가 프롬프트 아래에서 **부드럽게 반짝입니다.**
+이 방법으로 설치해야 마스코트가 프롬프트 아래에서 **부드럽게 반짝이고**, 아래의 `/statusline-...` 명령들을 쓸 수 있습니다. 플러그인은 한 번만 설치하면 모든 세션과 프로젝트에 적용됩니다(설치할 때 범위는 `user`).
+
+이미 열려 있는 다른 콘솔은 `/reload-plugins`를 입력하거나, 껐다가 `claude --continue`로 다시 열면 적용됩니다.
 
 ### 터미널에서
 
@@ -59,7 +62,7 @@ macOS, Linux, WSL:
 curl -fsSL https://raw.githubusercontent.com/black-astro/claude-statusline-astro/main/install.sh | sh
 ```
 
-터미널 설치만 하면 마스코트는 상태줄 끝에 나오고, 2초에 한 번씩 바뀝니다. 프롬프트 아래의 반짝이는 마스코트도 쓰려면 위의 `/plugin` 두 줄을 이어서 입력하세요.
+터미널 설치만 하면 상태줄과 마스코트가 나오지만, 마스코트는 상태줄 끝에서 2초에 한 번씩 바뀌고 `/statusline-...` 명령은 없습니다(뽑기는 `mascot` 명령으로 합니다). 반짝이는 마스코트와 명령도 쓰려면 위의 `/plugin` 두 줄을 이어서 입력하세요.
 
 ### 설치한 다음
 
@@ -165,17 +168,19 @@ curl -fsSL https://raw.githubusercontent.com/black-astro/claude-statusline-astro
 
 ## 4. 명령어
 
+모든 명령은 Claude를 거치지 않고 바로 실행됩니다. 토큰이 들지 않고, Claude가 일하는 중에도 바로 됩니다. 플러그인으로 설치하고 Claude Code가 최신 버전(2.1.296 이상에서 확인)일 때 쓸 수 있습니다.
+
 | 입력 | 하는 일 |
 | --- | --- |
 | `/statusline-roll` | 마스코트 뽑기 (하루 한 번) |
 | `/statusline-today` | 지금 내 마스코트와 이름 보기 |
 | `/statusline-place` | 마스코트 위치 보기·바꾸기 |
 | `/statusline-mode` | 정보 줄을 그리는 방식과 위치 보기·바꾸기 ([앱 모드](#앱-모드)) |
-| `/statusline-update` | 최신 버전으로 업데이트 |
+| `/statusline-update` | 상태줄 스크립트를 최신으로 (설정은 그대로) |
 | `/statusline-install` | 설치, 재설치 |
 | `/statusline-help` | 짧은 도움말 |
 
-터미널에서도 뽑고 볼 수 있습니다.
+명령이 안 보이는 환경(예전 Claude Code, 터미널 설치만 한 경우)에서는 터미널에서 뽑고 볼 수 있습니다.
 
 ```sh
 # macOS · Linux · WSL
@@ -376,12 +381,18 @@ Claude Code의 effort `max` 표시처럼, 글자마다 다른 색이 0.1초마�
 - 특히 Windows에서는 PowerShell이 계속 뜨지 않아서 가벼워집니다.
 - 프롬프트 바로 위에 두면 정보 줄이 한 줄을 통째로 써서 줄바꿈이 생기지 않습니다. `below`로 프롬프트 아래에 두면 `auto mode on` 같은 모드 표시와 같은 줄을 나눠 쓰기 때문에, 넘치는 부분은 끝이 `…`로 잘립니다.
 - 앱 모드는 `settings.json`의 상태줄 항목을 잠시 꺼 둡니다. 원래 설정은 따로 보관했다가 `/statusline-mode script`로 그대로 되돌립니다.
-- 플러그인을 지우기 전에는 꼭 `/statusline-mode script`로 되돌리세요. 되돌리지 않고 지웠다면 `/statusline-install`로 상태줄을 다시 설치하면 됩니다.
+- 플러그인을 지우기 전에는 꼭 `/statusline-mode script`로 되돌리세요. 되돌리지 않고 지웠다면 [터미널 설치](#터미널에서) 한 줄로 상태줄을 다시 설치하면 됩니다.
 - 플러그인으로 설치한 최신 Claude Code에서만 됩니다.
+- `/statusline-install`을 다시 실행하면 상태줄 스크립트가 다시 설치되면서 앱 모드는 꺼집니다. `/statusline-update`는 스크립트만 바꾸고 방식은 그대로 둡니다.
 
 <br>
 
 ## 8. 안 될 때
+
+**`/statusline-...` 명령이 안 보입니다.**
+- 플러그인으로 설치했는지 확인하세요. 터미널 설치만으로는 명령이 생기지 않습니다.
+- 이미 열려 있던 콘솔이면 `/reload-plugins`를 입력하거나 다시 여세요.
+- Claude Code를 최신 버전으로 올리세요.
 
 **줄이 아예 안 보입니다.**
 Claude Code를 완전히 닫았다가 다시 여세요. 그래도 없으면 `/statusline-install`을 한 번 더 실행하세요.
@@ -398,7 +409,7 @@ Claude Code를 완전히 닫았다가 다시 여세요. 그래도 없으면 `/st
 `below`로 두면 모드 표시와 한 줄을 나눠 써서 끝이 잘립니다. `/statusline-mode app`으로 프롬프트 위 한 줄에 두거나, 창을 넓히세요.
 
 **플러그인을 지웠더니 상태줄이 사라졌습니다.**
-앱 모드에서 지운 경우입니다. `/statusline-install`을 실행하면 다시 나타납니다.
+앱 모드에서 지운 경우입니다. [터미널 설치](#터미널에서) 한 줄을 실행하면 다시 나타납니다.
 
 **마스코트가 두 군데에 나옵니다.**
 상태줄 스크립트가 예전 버전입니다. `/statusline-update`를 실행하고 Claude Code를 다시 여세요.
@@ -441,7 +452,7 @@ powershell -File ~\.claude\statusline.ps1 -Version
    ```
 2. Claude Code를 다시 열고 `/statusline-update`를 입력합니다. 상태줄 스크립트가 새 버전으로 바뀝니다.
 
-마스코트와 위치 설정은 그대로 유지됩니다.
+마스코트, 위치, 정보 줄 방식(스크립트·앱)은 그대로 유지됩니다.
 
 ### 삭제
 
