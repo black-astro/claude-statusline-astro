@@ -24,7 +24,8 @@ allowed-tools: Bash
 
 읽는 법
   DIR    프로젝트 폴더        GIT   브랜치 (main·master 는 보라색)
-  MODEL  쓰는 모델            CTX   컨텍스트 사용량 (실시간)
+  MODEL  쓰는 모델            EFFORT  effort (L M H XH, max 는 U)
+  CTX    컨텍스트 사용량 (실시간)
   5H     5시간 한도 + 남은 시간
 
 마스코트
@@ -42,6 +43,7 @@ allowed-tools: Bash
   STATUSLINE_MASCOT=0      마스코트 숨기기
   STATUSLINE_TALK=0        얼굴만, 대사 없이
   STATUSLINE_SEVEN_DAY=1   주간(7일) 게이지 표시
+  STATUSLINE_EFFORT=0      effort 숨기기
   STATUSLINE_TRUE_COLOR=0  256색 터미널용
   NO_COLOR=1               색 전부 끄기
 ```

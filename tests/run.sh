@@ -45,7 +45,7 @@ HOOK_PS="powershell -NoProfile -ExecutionPolicy Bypass -File $ROOT/scripts/masco
 
 payload() {
     # $1 session id, $2 dir, $3 ctx, $4 five, $5 five_reset
-    printf '{"session_id":"%s","cwd":"%s","model":{"id":"x","display_name":"Opus 5"},"workspace":{"current_dir":"%s","project_dir":"%s"},"context_window":{"total_input_tokens":1,"current_usage":{"input_tokens":5,"output_tokens":1},"used_percentage":%s,"remaining_percentage":1},"rate_limits":{"five_hour":{"used_percentage":%s,"resets_at":%s},"seven_day":{"used_percentage":50,"resets_at":%s}}}' \
+    printf '{"session_id":"%s","cwd":"%s","model":{"id":"x","display_name":"Opus 5"},"effort":{"level":"xhigh"},"workspace":{"current_dir":"%s","project_dir":"%s"},"context_window":{"total_input_tokens":1,"current_usage":{"input_tokens":5,"output_tokens":1},"used_percentage":%s,"remaining_percentage":1},"rate_limits":{"five_hour":{"used_percentage":%s,"resets_at":%s},"seven_day":{"used_percentage":50,"resets_at":%s}}}' \
         "$1" "$2" "$2" "$2" "$3" "$4" "$5" "$5"
 }
 
@@ -154,6 +154,8 @@ no_talk=$(printf '%s' "$P" | STATUSLINE_TALK=0 $SH | strip)
 [ "${#no_talk}" -lt "${#with_talk}" ] && ok "STATUSLINE_TALK=0 drops the line while working" || bad "STATUSLINE_TALK=0" "$with_talk / $no_talk"
 printf '%s' "$P" | NO_COLOR=1 $SH | grep -q "$(printf '\033')" && bad "NO_COLOR left escapes" "" || ok "NO_COLOR strips every escape"
 printf '%s' "$P" | STATUSLINE_SEVEN_DAY=1 $SH | strip | grep -q '7D' && ok "STATUSLINE_SEVEN_DAY=1 adds the weekly meter" || bad "7D" ""
+printf '%s' "$P" | $SH | strip | grep -q 'MODEL Opus 5 | EFFORT XH | CTX' && ok "effort shows as its letters after the model" || bad "effort" "$(printf '%s' "$P" | $SH | strip)"
+printf '%s' "$P" | STATUSLINE_EFFORT=0 $SH | strip | grep -q 'EFFORT' && bad "STATUSLINE_EFFORT=0 still shows it" "" || ok "STATUSLINE_EFFORT=0 hides the effort"
 if [ "$HAVE_PS" -eq 1 ]; then
     printf '%s' "$P" | STATUSLINE_SEVEN_DAY=1 $PS | strip | grep -q '7D' && ok "ps: STATUSLINE_SEVEN_DAY=1" || bad "ps 7D" ""
     printf '%s' "$P" | NO_COLOR=1 $PS | grep -q "$(printf '\033')" && bad "ps NO_COLOR" "" || ok "ps: NO_COLOR strips every escape"

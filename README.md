@@ -194,7 +194,7 @@ curl -fsSL https://raw.githubusercontent.com/black-astro/claude-statusline-astro
 ## 5. 화면 읽는 법
 
 ```
-DIR my-project | GIT main | MODEL Opus 5 | CTX [◼◼◻◻◻◻◻◻◻◻] 21% | 5H [◼◼◼◻◻◻◻◻◻◻] 34% 1h49m
+DIR my-project | GIT main | MODEL Opus 5 | EFFORT H | CTX [◼◼◻◻◻◻◻◻◻◻] 21% | 5H [◼◼◼◻◻◻◻◻◻◻] 34% 1h49m
 ```
 
 | 항목 | 뜻 |
@@ -202,6 +202,7 @@ DIR my-project | GIT main | MODEL Opus 5 | CTX [◼◼◻◻◻◻◻◻◻◻] 
 | `DIR` | 작업 중인 프로젝트 폴더 |
 | `GIT` | 브랜치. `main`과 `master`는 보라색, 나머지는 하늘색 |
 | `MODEL` | 쓰는 모델 |
+| `EFFORT` | 생각하는 정도(effort). `L` low · `M` medium · `H` high · `XH` xhigh · `U` max. `/effort`로 바꾸면 따라 바뀝니다 |
 | `CTX` | 대화가 얼마나 찼는지. 100%에 가까워지면 앞쪽 대화가 정리됩니다 |
 | `5H` | 5시간 사용 한도. 뒤의 `1h49m`은 한도가 새로 시작되기까지 남은 시간 |
 
@@ -350,6 +351,7 @@ Claude Code의 effort `max` 표시처럼, 글자마다 다른 색이 0.1초마�
 | `STATUSLINE_MASCOT` | `0` | 마스코트 숨기기 |
 | `STATUSLINE_TALK` | `0` | 얼굴만, 대사 없이 |
 | `STATUSLINE_SEVEN_DAY` | `1` | 주간(7일) 사용 한도 게이지 표시 |
+| `STATUSLINE_EFFORT` | `0` | `EFFORT` 숨기기 (기본은 보임) |
 | `STATUSLINE_TRUE_COLOR` | `0` | 256색만 되는 터미널에서 상태줄 끝 레전드·유니크 색 맞추기 |
 | `NO_COLOR` | `1` | 색 전부 끄기 |
 
@@ -357,7 +359,7 @@ Claude Code의 effort `max` 표시처럼, 글자마다 다른 색이 0.1초마�
 
 ### 앱 모드
 
-평소에는 상태줄 스크립트가 1~2초마다 실행되며 정보 줄을 그립니다. 앱 모드를 켜면 정보 줄(`DIR`, `GIT`, `MODEL`, `CTX`, `5H`)까지 플러그인이 Claude Code 안에서 직접 그리고, 스크립트는 더 이상 실행되지 않습니다.
+평소에는 상태줄 스크립트가 1~2초마다 실행되며 정보 줄을 그립니다. 앱 모드를 켜면 정보 줄(`DIR`, `GIT`, `MODEL`, `EFFORT`, `CTX`, `5H`)까지 플러그인이 Claude Code 안에서 직접 그리고, 스크립트는 더 이상 실행되지 않습니다.
 
 ```
 /statusline-mode app          켜기 (정보 줄은 프롬프트 바로 위)

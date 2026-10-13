@@ -20,7 +20,7 @@ BAR_GAP=''      # cells are flush; the glyph provides its own separation
 BAR_PAD=''      # spacing just inside the brackets
 DIR_MAX=32      # project name is left-truncated past this many characters
 
-STATUSLINE_VERSION='1.9.1'
+STATUSLINE_VERSION='1.10.0'
 
 # Run with no arguments (the way Claude Code calls it) to print the status line.
 #   --roll      roll today's mascot (once a day) and exit
@@ -59,6 +59,8 @@ case "${1:-}" in
 esac
 
 SHOW_SEVEN_DAY=0  # set to 1 to also show the 7-day (weekly) meter
+# The reasoning effort after the model, as one or two letters (L M H XH U).
+SHOW_EFFORT=1
 
 # Mascot: a kaomoji at the end of the line reflecting what the session is doing.
 # It needs the companion hook (mascot-hook.sh) to know the state - without it the
@@ -88,10 +90,12 @@ TALK_WINDOW_SECS=60
 #   STATUSLINE_TALK=0        face only, no lines
 #   STATUSLINE_SEVEN_DAY=1   show the weekly meter
 #   STATUSLINE_TRUE_COLOR=0  256-colour ramps
+#   STATUSLINE_EFFORT=0      hide the effort
 case "${STATUSLINE_MASCOT:-}" in 0) SHOW_MASCOT=0 ;; 1) SHOW_MASCOT=1 ;; esac
 case "${STATUSLINE_TALK:-}" in 0) SHOW_MASCOT_TALK=0 ;; 1) SHOW_MASCOT_TALK=1 ;; esac
 case "${STATUSLINE_SEVEN_DAY:-}" in 0) SHOW_SEVEN_DAY=0 ;; 1) SHOW_SEVEN_DAY=1 ;; esac
 case "${STATUSLINE_TRUE_COLOR:-}" in 0) LEGEND_TRUE_COLOR=0 ;; 1) LEGEND_TRUE_COLOR=1 ;; esac
+case "${STATUSLINE_EFFORT:-}" in 0) SHOW_EFFORT=0 ;; 1) SHOW_EFFORT=1 ;; esac
 # The plugin draws the mascot under the prompt itself on a Claude Code that
 # can, and says so here; the line then leaves its own face out.
 case "${STATUSLINE_MASCOT_BY_MOD:-}" in 1) SHOW_MASCOT=0 ;; esac
@@ -127,6 +131,7 @@ if [ -n "${NO_COLOR:-}" ]; then
     C_GIT_MAIN=''
     C_GIT_OTHER=''
     C_MODEL=''
+    C_EFF_L=''; C_EFF_M=''; C_EFF_H=''; C_EFF_XH=''; C_EFF_U=''
     C_OK=''
     C_WARN=''
     C_CRIT=''
@@ -144,6 +149,12 @@ else
     C_GIT_MAIN="${ESC}[95m"         # magenta — main / master
     C_GIT_OTHER="${ESC}[96m"        # sky blue — every other branch
     C_MODEL="${ESC}[93m"            # yellow — model name
+    # Effort, low -> max: grey, green, sky blue, magenta, bold yellow.
+    C_EFF_L="${ESC}[37m"
+    C_EFF_M="${ESC}[92m"
+    C_EFF_H="${ESC}[96m"
+    C_EFF_XH="${ESC}[95m"
+    C_EFF_U="${ESC}[1;93m"
     # 256-color meter palette. For 16-color-only terminals use
     # 96 / 93 / 91 in place of these three.
     C_OK="${ESC}[38;5;46m"          # neon green  — under WARN_AT
@@ -181,6 +192,7 @@ get_nested_num() {
 if command -v jq >/dev/null 2>&1; then
     dir=$(printf '%s' "$payload" | jq -r '(.workspace.current_dir // .cwd // "")')
     model=$(printf '%s' "$payload" | jq -r '(.model.display_name // "")')
+    effort=$(printf '%s' "$payload" | jq -r '(.effort.level // "")')
     sid=$(printf '%s' "$payload" | jq -r '(.session_id // "")')
     ctx=$(printf '%s' "$payload" | jq -r '(.context_window.used_percentage // "")')
     five=$(printf '%s' "$payload" | jq -r '(.rate_limits.five_hour.used_percentage // "")')
@@ -191,6 +203,8 @@ else
     dir=$(get_str current_dir)
     [ -z "$dir" ] && dir=$(get_str cwd)
     model=$(get_str display_name)
+    effort=$(printf '%s' "$payload" |
+        sed -n 's/.*"effort"[[:space:]]*:[[:space:]]*{[^{}]*"level"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
     sid=$(get_str session_id)
     ctx=$(get_nested_num context_window used_percentage)
     five=$(get_nested_num five_hour used_percentage)
@@ -1004,6 +1018,16 @@ SEP="${DIM} | ${RESET}"
 line="${DIM}DIR${RESET} ${C_DIR}${project}${RESET}"
 line="${line}${SEP}${DIM}GIT${RESET} ${c_branch}${branch}${RESET}"
 line="${line}${SEP}${DIM}MODEL${RESET} ${C_MODEL}${model}${RESET}"
+# Effort as its first letters: L M H XH, and U for max.
+if [ "$SHOW_EFFORT" -eq 1 ]; then
+    case "$effort" in
+        low)    line="${line}${SEP}${DIM}EFFORT${RESET} ${C_EFF_L}L${RESET}" ;;
+        medium) line="${line}${SEP}${DIM}EFFORT${RESET} ${C_EFF_M}M${RESET}" ;;
+        high)   line="${line}${SEP}${DIM}EFFORT${RESET} ${C_EFF_H}H${RESET}" ;;
+        xhigh)  line="${line}${SEP}${DIM}EFFORT${RESET} ${C_EFF_XH}XH${RESET}" ;;
+        max)    line="${line}${SEP}${DIM}EFFORT${RESET} ${C_EFF_U}U${RESET}" ;;
+    esac
+fi
 line="${line}${SEP}${DIM}CTX${RESET} $(meter "$ctx" '')"
 line="${line}${SEP}${DIM}5H${RESET} $(meter "$best5u" "$best5r")"
 if [ "$SHOW_SEVEN_DAY" -eq 1 ]; then

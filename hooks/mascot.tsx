@@ -46,12 +46,14 @@ const turn = atom({ plugin: 'statusline', key: 'turn' } as const, { state: 'idle
 const activity = atom({ plugin: 'statusline', key: 'activity' } as const, null)
 const roll = atom({ plugin: 'statusline', key: 'roll' } as const, null)
 const info = atom({ plugin: 'statusline', key: 'info' } as const, null)
+const effort = atom({ plugin: 'statusline', key: 'effort' } as const, null)
 
 type Settings = {
   isShown: boolean
   isTalking: boolean
   isColored: boolean
   showsWeek: boolean
+  showsEffort: boolean
   cacheDir: string
   settingsFile: string
 }
@@ -67,6 +69,7 @@ function loadSettings($: EngineInterface): Promise<Settings> {
       isTalking: (await $.env.get('STATUSLINE_TALK')) !== '0',
       isColored: !(await $.env.get('NO_COLOR')),
       showsWeek: (await $.env.get('STATUSLINE_SEVEN_DAY')) === '1',
+      showsEffort: (await $.env.get('STATUSLINE_EFFORT')) !== '0',
       cacheDir: (await $.env.get('STATUSLINE_CACHE_DIR')) || `${home}/.claude/statusline-cache`,
       settingsFile: `${config}/settings.json`,
     }
@@ -412,7 +415,7 @@ const C = {
   crit: '#ff5f5f',
 }
 
-type Piece = { text: string; color?: string }
+type Piece = { text: string; color?: string; bold?: boolean }
 
 function meter(pct: number | null, resets: number, nowSec: number): Piece[] {
   if (pct === null) return [{ text: `[${'◻'.repeat(BAR_LENGTH)}] --%`, color: C.dim }]
@@ -426,7 +429,16 @@ function meter(pct: number | null, resets: number, nowSec: number): Piece[] {
   return out
 }
 
-export function infoPieces(i: LineInfo, nowSec: number, showsWeek: boolean): Piece[] {
+// Effort as its first letters, as the status line scripts draw it.
+const EFFORT: Record<string, Piece> = {
+  low: { text: 'L', color: 'white' },
+  medium: { text: 'M', color: 'greenBright' },
+  high: { text: 'H', color: 'cyanBright' },
+  xhigh: { text: 'XH', color: 'magentaBright' },
+  max: { text: 'U', color: 'yellowBright', bold: true },
+}
+
+export function infoPieces(i: LineInfo, nowSec: number, showsWeek: boolean, level: string | null = null): Piece[] {
   const sep: Piece = { text: ' | ', color: C.dim }
   const branch = i.branch || '-'
   const branchColor = i.branch === '' ? C.dim : branch === 'main' || branch === 'master' ? C.gitMain : C.gitOther
@@ -439,6 +451,7 @@ export function infoPieces(i: LineInfo, nowSec: number, showsWeek: boolean): Pie
     sep,
     { text: 'MODEL ', color: C.dim },
     { text: i.model || '-', color: C.model },
+    ...(level !== null && EFFORT[level] !== undefined ? [sep, { text: 'EFFORT ', color: C.dim }, EFFORT[level]!] : []),
     sep,
     { text: 'CTX ', color: C.dim },
     ...meter(i.context, 0, nowSec),
@@ -450,6 +463,14 @@ export function infoPieces(i: LineInfo, nowSec: number, showsWeek: boolean): Pie
     out.push(sep, { text: '7D ', color: C.dim }, ...meter(i.sevenDay?.used ?? null, i.sevenDay?.resets ?? 0, nowSec))
   }
   return out
+}
+
+const LEVELS = ['low', 'medium', 'high', 'xhigh', 'max']
+
+// Records the effort an event carries (a classic hook's `effort.level`).
+async function noteEffort($: EngineInterface, e: unknown): Promise<void> {
+  const level = (e as { effort?: { level?: unknown } }).effort?.level
+  if (typeof level === 'string' && LEVELS.includes(level)) await update($, effort, () => level)
 }
 
 // ---- hooks -----------------------------------------------------------------
@@ -481,6 +502,8 @@ export const register: Register = on => {
     await update($, mode, () => how)
     await update($, linePlace, () => lineAt)
     await applyPlace($, where, how)
+    const startLevel = (await $.env.get('CLAUDE_EFFORT')) ?? (json?.effortLevel as string | undefined)
+    if (typeof startLevel === 'string' && startLevel !== '') await update($, effort, old => old ?? startLevel)
     rollSeenAt = -1
     await refreshRoll($)
     $.clock.every(ROLL_POLL_MS, () => {
@@ -534,6 +557,19 @@ export const register: Register = on => {
     return { text: `정보 줄: ${MODES[arg]}${where}` }
   })
 
+  // The effort, from the events that carry it, and from /effort itself.
+  on('classic.PostToolUse', async ($, e, next) => {
+    await noteEffort($, e)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  on('command.run', { command: 'effort' }, async ($, e, next) => {
+    const ran = await next(e)
+    const level = e.args.trim().toLowerCase()
+    if (LEVELS.includes(level)) await update($, effort, () => level)
+    return ran
+  }).catch(($, e, next) => next(e))
+
   // The turn's states, from the same events the status line's hooks use. A
   // failure here never holds the event up: the catch lets it go on.
   on('classic.UserPromptSubmit', async ($, e, next) => {
@@ -543,6 +579,7 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('classic.Stop', async ($, e, next) => {
+    await noteEffort($, e)
     const stamp = await setTurn($, 'done')
     $.clock.after(TALK_WINDOW_MS, () => {
       update($, turn, t => (t.state === 'done' && t.stamp === stamp ? { state: 'idle', stamp } : t)).catch(
@@ -610,7 +647,7 @@ export const register: Register = on => {
     const nowSec = Math.floor((await $.clock.now()) / 1000)
     return (
       <Box flexDirection="row">
-        {line !== null && infoText(Text, line, nowSec, s, hint)}
+        {line !== null && infoText(Text, line, nowSec, s, hint, await read($, effort))}
         {line !== null && face !== null && <Text> </Text>}
         {face !== null && <Client key="mascot" module="./mascot-face.tsx" props={face} />}
       </Box>
@@ -633,7 +670,7 @@ export const register: Register = on => {
     const nowSec = Math.floor((await $.clock.now()) / 1000)
     return (
       <Box flexDirection="row">
-        {line !== null && infoText(Text, line, nowSec, s, '')}
+        {line !== null && infoText(Text, line, nowSec, s, '', await read($, effort))}
         {line !== null && face !== null && <Text> </Text>}
         {face !== null && <Client key="mascot" module="./mascot-face.tsx" props={face} />}
       </Box>
@@ -643,16 +680,19 @@ export const register: Register = on => {
 
 // The info line as one Text, so it is cut at the row's end and never wraps.
 function infoText(
-  Text: (props: { color?: string; dimColor?: boolean; wrap?: 'truncate-end'; children?: unknown }) => unknown,
+  Text: (props: { color?: string; bold?: boolean; dimColor?: boolean; wrap?: 'truncate-end'; children?: unknown }) => unknown,
   line: LineInfo,
   nowSec: number,
   s: Settings,
   hint: string,
+  level: string | null,
 ) {
   return (
     <Text wrap="truncate-end">
-      {infoPieces(line, nowSec, s.showsWeek).map(p => (
-        <Text color={s.isColored ? p.color : undefined}>{p.text}</Text>
+      {infoPieces(line, nowSec, s.showsWeek, s.showsEffort ? level : null).map(p => (
+        <Text color={s.isColored ? p.color : undefined} bold={s.isColored && p.bold === true}>
+          {p.text}
+        </Text>
       ))}
       {hint !== '' && <Text dimColor> · {hint}</Text>}
     </Text>
