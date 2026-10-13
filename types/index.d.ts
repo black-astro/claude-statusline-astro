@@ -54,6 +54,8 @@ declare module 'claude-code' {
       activity: MascotActivity | null
       roll: MascotRoll | null
       info: LineInfo | null
+      // The reasoning effort as the engine last reported it (low ... max).
+      effort: string | null
     }
   }
 }

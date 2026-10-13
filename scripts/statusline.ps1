@@ -21,7 +21,7 @@ param(
     [string]$Face = ''
 )
 
-$StatuslineVersion = '1.9.1'
+$StatuslineVersion = '1.10.0'
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -48,6 +48,8 @@ $DirMax = 32                      # project name is left-truncated past this
 $Ellipsis = [string][char]0x2026
 
 $ShowSevenDay = $false  # set to $true to also show the 7-day (weekly) meter
+# The reasoning effort after the model, as one or two letters (L M H XH U).
+$ShowEffort = $true
 
 # Mascot: a kaomoji at the end of the line that reflects what the session is
 # doing. The companion hooks (mascot-hook.ps1) tell it the state; without them
@@ -77,10 +79,12 @@ $TalkWindowSecs = 60
 #   STATUSLINE_TALK=0        face only, no lines
 #   STATUSLINE_SEVEN_DAY=1   show the weekly meter
 #   STATUSLINE_TRUE_COLOR=0  256-colour ramps
+#   STATUSLINE_EFFORT=0      hide the effort
 switch ($env:STATUSLINE_MASCOT) { '0' { $ShowMascot = $false } '1' { $ShowMascot = $true } }
 switch ($env:STATUSLINE_TALK) { '0' { $ShowMascotTalk = $false } '1' { $ShowMascotTalk = $true } }
 switch ($env:STATUSLINE_SEVEN_DAY) { '0' { $ShowSevenDay = $false } '1' { $ShowSevenDay = $true } }
 switch ($env:STATUSLINE_TRUE_COLOR) { '0' { $LegendTrueColor = $false } '1' { $LegendTrueColor = $true } }
+switch ($env:STATUSLINE_EFFORT) { '0' { $ShowEffort = $false } '1' { $ShowEffort = $true } }
 # The plugin draws the mascot under the prompt itself on a Claude Code that
 # can, and says so here; the line then leaves its own face out.
 if ($env:STATUSLINE_MASCOT_BY_MOD -eq '1') { $ShowMascot = $false }
@@ -123,6 +127,8 @@ if ([string]::IsNullOrEmpty($env:NO_COLOR)) {
     $CGitMain = "$($Esc)[95m"         # magenta — main / master
     $CGitOther = "$($Esc)[96m"        # sky blue — every other branch
     $CModel = "$($Esc)[93m"           # yellow — model name
+    # Effort, low -> max: grey, green, sky blue, magenta, bold yellow.
+    $CEffort = @{ low = "$($Esc)[37m"; medium = "$($Esc)[92m"; high = "$($Esc)[96m"; xhigh = "$($Esc)[95m"; max = "$($Esc)[1;93m" }
     # 256-color meter palette. For 16-color-only terminals use
     # 96 / 93 / 91 in place of these three.
     $COk = "$($Esc)[38;5;46m"         # neon green — under WarnAt
@@ -138,6 +144,7 @@ if ([string]::IsNullOrEmpty($env:NO_COLOR)) {
 } else {
     $Reset = ''; $Dim = ''; $CDir = ''; $CGitMain = ''; $CGitOther = ''
     $CModel = ''; $COk = ''; $CWarn = ''; $CCrit = ''
+    $CEffort = @{ low = ''; medium = ''; high = ''; xhigh = ''; max = '' }
     $CCommon = ''; $CUncommon = ''; $CRare = ''; $CUnique = ''; $CLegend = ''
     $CDev = ''
 }
@@ -957,6 +964,10 @@ try {
     $model = $null
     $modelObj = Get-JsonObj $raw 'model'
     if ($null -ne $modelObj) { $model = Get-JsonStr $modelObj 'display_name' }
+
+    $effort = $null
+    $effortObj = Get-JsonObj $raw 'effort'
+    if ($null -ne $effortObj) { $effort = Get-JsonStr $effortObj 'level' }
     if ([string]::IsNullOrWhiteSpace($model)) { $model = '-' }
 
     # One git call answers everything: repository root, branch, and the short
@@ -1092,6 +1103,11 @@ try {
     $out = "$($Dim)DIR$($Reset) $($CDir)$($project)$($Reset)"
     $out += "$($sep)$($Dim)GIT$($Reset) $($cBranch)$($branch)$($Reset)"
     $out += "$($sep)$($Dim)MODEL$($Reset) $($CModel)$($model)$($Reset)"
+    # Effort as its first letters: L M H XH, and U for max.
+    $effortAbbr = @{ low = 'L'; medium = 'M'; high = 'H'; xhigh = 'XH'; max = 'U' }
+    if ($ShowEffort -and $null -ne $effort -and $effortAbbr.ContainsKey($effort)) {
+        $out += "$($sep)$($Dim)EFFORT$($Reset) $($CEffort[$effort])$($effortAbbr[$effort])$($Reset)"
+    }
     $out += "$($sep)$($Dim)CTX$($Reset) $(Get-Meter $ctxPct $null)"
     $out += "$($sep)$($Dim)5H$($Reset) $(Get-Meter $best5U $best5R)"
     if ($ShowSevenDay) {

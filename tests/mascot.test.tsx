@@ -231,6 +231,16 @@ test('app mode draws the info line itself, switches the script off, and gives it
   // The other session's newer window wins.
   expect(line).toContain('80%')
   await band.unmount()
+
+  // The effort follows /effort and what the turn's events report.
+  await $.command.run({ command: 'effort', args: 'max' })
+  const banded = await $.ui.mount(ABOVE)
+  expect((await banded.findAll({ type: 'Text' }))[0]?.text).toContain('MODEL Opus 5.5 | EFFORT U | CTX')
+  await $.classic.Stop({ stop_hook_active: false, effort: { level: 'xhigh' } } as never)
+  await banded.redraw()
+  expect((await banded.findAll({ type: 'Text' }))[0]?.text).toContain('EFFORT XH')
+  await banded.unmount()
+
   const hintAbove = await $.ui.mount(HINT)
   expect(await hintAbove.find({ type: 'Text', text: 'engine' })).toBeDefined()
   await hintAbove.unmount()
