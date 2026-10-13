@@ -194,14 +194,14 @@ curl -fsSL https://raw.githubusercontent.com/black-astro/claude-statusline-astro
 ## 5. 화면 읽는 법
 
 ```
-DIR my-project | GIT main | MODEL Opus 5 | EFFORT H | CTX [◼◼◻◻◻◻◻◻◻◻] 21% | 5H [◼◼◼◻◻◻◻◻◻◻] 34% 1h49m
+DIR my-project | GIT main | MODEL opus5.5 | EFFORT H | CTX [◼◼◻◻◻◻◻◻◻◻] 21% | 5H [◼◼◼◻◻◻◻◻◻◻] 34% 1h49m
 ```
 
 | 항목 | 뜻 |
 | --- | --- |
 | `DIR` | 작업 중인 프로젝트 폴더 |
 | `GIT` | 브랜치. `main`과 `master`는 보라색, 나머지는 하늘색 |
-| `MODEL` | 쓰는 모델 |
+| `MODEL` | 쓰는 모델. `opus5.5`처럼 이름과 버전만 짧게 |
 | `EFFORT` | 생각하는 정도(effort). `L` low · `M` medium · `H` high · `XH` xhigh · `U` max. `/effort`로 바꾸면 따라 바뀝니다 |
 | `CTX` | 대화가 얼마나 찼는지. 100%에 가까워지면 앞쪽 대화가 정리됩니다 |
 | `5H` | 5시간 사용 한도. 뒤의 `1h49m`은 한도가 새로 시작되기까지 남은 시간 |

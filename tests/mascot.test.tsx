@@ -1,7 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import { hmacHex } from '../hooks/mascot'
+import { hmacHex, shortModel } from '../hooks/mascot'
 import { FACES, TALK } from '../hooks/mascot-data'
 
 // A key shaped like the ones the hooks make: 64 hex characters.
@@ -163,6 +163,14 @@ test('while working it rotates lines, gives a riddle its answer later, and says 
   await ui.unmount()
 })
 
+test('model names are cut to family and version', () => {
+  expect(shortModel('Opus 5.5 (1M context)')).toBe('opus5.5')
+  expect(shortModel('claude-opus-5-5')).toBe('opus5.5')
+  expect(shortModel('claude-opus-4-1-20250805')).toBe('opus4.1')
+  expect(shortModel('Haiku')).toBe('haiku')
+  expect(shortModel('-')).toBe('-')
+})
+
 test('the higher the tier, the more it has to say', () => {
   const amount = (t: keyof typeof TALK) => TALK[t].work.length + TALK[t].quiz.length + Object.keys(TALK[t].activity).length
   expect(amount('common')).toBeLessThan(amount('rare'))
@@ -226,7 +234,7 @@ test('app mode draws the info line itself, switches the script off, and gives it
   const line = whole?.text ?? ''
   expect(line).toContain('DIR my-project')
   expect(line).toContain('GIT main')
-  expect(line).toContain('MODEL Opus 5.5')
+  expect(line).toContain('MODEL opus5.5')
   expect(line).toContain('42%')
   // The other session's newer window wins.
   expect(line).toContain('80%')
@@ -235,7 +243,7 @@ test('app mode draws the info line itself, switches the script off, and gives it
   // The effort follows /effort and what the turn's events report.
   await $.command.run({ command: 'effort', args: 'max' })
   const banded = await $.ui.mount(ABOVE)
-  expect((await banded.findAll({ type: 'Text' }))[0]?.text).toContain('MODEL Opus 5.5 | EFFORT U | CTX')
+  expect((await banded.findAll({ type: 'Text' }))[0]?.text).toContain('MODEL opus5.5 | EFFORT U | CTX')
   await $.classic.Stop({ stop_hook_active: false, effort: { level: 'xhigh' } } as never)
   await banded.redraw()
   expect((await banded.findAll({ type: 'Text' }))[0]?.text).toContain('EFFORT XH')

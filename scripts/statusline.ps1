@@ -21,7 +21,7 @@ param(
     [string]$Face = ''
 )
 
-$StatuslineVersion = '1.10.0'
+$StatuslineVersion = '1.10.1'
 
 $ErrorActionPreference = 'SilentlyContinue'
 
@@ -969,6 +969,18 @@ try {
     $effortObj = Get-JsonObj $raw 'effort'
     if ($null -ne $effortObj) { $effort = Get-JsonStr $effortObj 'level' }
     if ([string]::IsNullOrWhiteSpace($model)) { $model = '-' }
+    # The model as family and version only: "Opus 5.5 (1M context)" and
+    # "claude-opus-5-5" both read opus5.5. A name with no family stays as it is.
+    $low = [regex]::Replace($model.ToLowerInvariant(), '\([^)]*\)|\[[^\]]*\]', '').Replace('claude', '')
+    $fam = [regex]::Match($low, '[a-z]+')
+    if ($fam.Success) {
+        $nums = @()
+        foreach ($d in [regex]::Matches($low.Substring($fam.Index + $fam.Length), '[0-9]+')) {
+            if ($nums.Count -ge 2 -or $d.Value.Length -gt 3) { break }
+            $nums += $d.Value
+        }
+        $model = $fam.Value + ($nums -join '.')
+    }
 
     # One git call answers everything: repository root, branch, and the short
     # hash for a detached HEAD. A missing git or a directory outside any
