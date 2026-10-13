@@ -20,7 +20,7 @@ BAR_GAP=''      # cells are flush; the glyph provides its own separation
 BAR_PAD=''      # spacing just inside the brackets
 DIR_MAX=32      # project name is left-truncated past this many characters
 
-STATUSLINE_VERSION='1.7.6'
+STATUSLINE_VERSION='1.8.0'
 
 # Run with no arguments (the way Claude Code calls it) to print the status line.
 #   --roll      roll today's mascot (once a day) and exit
@@ -92,6 +92,9 @@ case "${STATUSLINE_MASCOT:-}" in 0) SHOW_MASCOT=0 ;; 1) SHOW_MASCOT=1 ;; esac
 case "${STATUSLINE_TALK:-}" in 0) SHOW_MASCOT_TALK=0 ;; 1) SHOW_MASCOT_TALK=1 ;; esac
 case "${STATUSLINE_SEVEN_DAY:-}" in 0) SHOW_SEVEN_DAY=0 ;; 1) SHOW_SEVEN_DAY=1 ;; esac
 case "${STATUSLINE_TRUE_COLOR:-}" in 0) LEGEND_TRUE_COLOR=0 ;; 1) LEGEND_TRUE_COLOR=1 ;; esac
+# The plugin draws the mascot under the prompt itself on a Claude Code that
+# can, and says so here; the line then leaves its own face out.
+case "${STATUSLINE_MASCOT_BY_MOD:-}" in 1) SHOW_MASCOT=0 ;; esac
 
 # Rarity odds in per-mille, lowest rarity first, totalling 1000 and lined up with
 # MASCOT_TIERS below. These are fixed on purpose: everyone rolls against the same

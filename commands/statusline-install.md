@@ -76,4 +76,7 @@ Do this yourself with tools — do not just print instructions.
 5. Report the installed path, the `statusLine` block that was written, and the
    test output. Tell the user to restart Claude Code or open a new session, and
    that the mascot appears only after `/statusline-roll` — it is not rolled
-   automatically.
+   automatically. With this plugin installed on a recent Claude Code the mascot
+   sits under the prompt on the right and legends shimmer there; the status
+   line then leaves its own copy out. `/statusline-place right|left|above|line`
+   moves it (`line` puts it back at the end of the status line).

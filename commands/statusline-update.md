@@ -26,3 +26,7 @@ allowed-tools: Bash, Read, Write, Edit
    새로 정해진다.
 
 4. 새 버전을 다시 확인해 출력하고, 바뀐 버전 번호를 사용자에게 보고한다.
+
+5. 플러그인 자체(프롬프트 아래 마스코트)는 이 명령으로 바뀌지 않는다. 플러그인이
+   예전 버전이면 터미널에서 `claude plugin update statusline@black-astro` 를 실행한 뒤
+   Claude Code 를 다시 열라고 안내한다.
