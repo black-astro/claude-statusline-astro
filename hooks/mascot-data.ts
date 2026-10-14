@@ -2,7 +2,7 @@
 
 export type Tier = 'common' | 'uncommon' | 'rare' | 'unique' | 'legend' | 'dev'
 export type Activity = 'read' | 'search' | 'edit' | 'run' | 'web' | 'agent'
-export type Effect = 'azure' | 'luna' | 'volt' | 'stella' | 'mystic'
+export type Effect = 'azure' | 'bat' | 'volt' | 'blaze' | 'aurora'
 export type Riddle = { q: string; a: string }
 export type TierTalk = {
   work: string[]
@@ -14,8 +14,8 @@ export type TierTalk = {
 }
 // How a legend is drawn: its effect, its body colours, where its outside
 // decorations sit (first and/or last character), the colour its line
-// wears, and for lightning the two yellows of the bolts.
-export type LegendFx = { effect: Effect; theme: string; sides: string; ramp: string[]; bolts?: string[] }
+// wears, and the colours of its decorations when they are not the rainbow.
+export type LegendFx = { effect: Effect; theme: string; sides: string; ramp: string[]; deco?: string[] }
 
 export const FACES: Record<Tier, { name: string; frames: string[] }[]> = {
   "common": [
@@ -156,46 +156,45 @@ export const FACES: Record<Tier, { name: string; frames: string[] }[]> = {
     {
       "name": "Azure",
       "frames": [
-        "ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋",
-        "ʚ૮(˶ˋ–ﻌ–ˊ˶)აɞ≋",
-        "ʚ૮(˶ˋ●ﻌ●ˊ˶)აɞ≋",
-        "ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋"
+        "༺(^˶•ᴗ•˶^)༻",
+        "༺(^˶–ᴗ–˶^)༻",
+        "༺(^˶•o•˶^)༻",
+        "༺(^˶•ᴗ•˶^)༻"
       ]
     },
     {
       "name": "Luna",
       "frames": [
-        "☾꒰˶ᵔ ᴗ ᵔ˶꒱✧",
-        "☾꒰˶- ᴗ -˶꒱✧",
-        "☾꒰˶ᵔ o ᵔ˶꒱✧",
-        "☾꒰˶ᵔ ᴗ ᵔ˶꒱✧"
+        "ᵛ⎛⎝(˶•ⱅ•˶)⎠⎞ᵛ",
+        "ᵛ⎝⎛(˶•ⱅ•˶)⎞⎠ᵛ"
       ]
     },
     {
       "name": "Volt",
       "frames": [
-        "ϟᐱ(˶•ﻌ•˶)ᐱϟ",
-        "ϟᐱ(˶˘ﻌ˘˶)ᐱϟ",
-        "ϟᐱ(˶–ﻌ–˶)ᐱϟ",
-        "ϟᐱ(˶˘ﻌ˘˶)ᐱϟ"
+        "ϟฅ/ᐠ˶•ﻌ•˶ᐟ\\ฅϟ",
+        "ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\\ฅϟ",
+        "ϟฅ/ᐠ˶–ﻌ–˶ᐟ\\ฅϟ",
+        "ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\\ฅϟ"
       ]
     },
     {
-      "name": "Stella",
+      "name": "Blaze",
       "frames": [
-        "✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧",
-        "✦ʚ꒰˶-ᴗ-˶꒱ɞ✧",
-        "✦ʚ꒰˶✧o✧˶꒱ɞ✧",
-        "✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧"
+        "♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨",
+        "♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨",
+        "♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨",
+        "♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨",
+        "♨ฅʕ ◣ˋ‸ˊ◢ꐦ ʔฅ♨"
       ]
     },
     {
       "name": "Mystic",
       "frames": [
-        "/ᐠ˶ᓀ ω ᓂ˶ᐟ\\⟡",
-        "/ᐠ˶ʘ ω ʘ˶ᐟ\\⟡",
-        "/ᐠ˶- ω -˶ᐟ\\⟡",
-        "/ᐠ˶ᓀ ω ᓂ˶ᐟ\\⟡"
+        "☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧",
+        "☆ฅ^˶- ω -˶^ฅ✧",
+        "☆ฅ^˶◕ ω ◕˶^ฅ✧",
+        "☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧"
       ]
     }
   ],
@@ -240,7 +239,7 @@ export const LEGEND_FX: LegendFx[] = [
   {
     "effect": "azure",
     "theme": "#33b5ff",
-    "sides": "R",
+    "sides": "LR",
     "ramp": [
       "#1f5fff",
       "#2b8bff",
@@ -250,15 +249,19 @@ export const LEGEND_FX: LegendFx[] = [
     ]
   },
   {
-    "effect": "luna",
-    "theme": "#b9b2ff",
+    "effect": "bat",
+    "theme": "#b48cff",
     "sides": "LR",
     "ramp": [
-      "#7f6dff",
-      "#9d8cff",
-      "#c3baff",
-      "#e8ebff",
-      "#a9c0ff"
+      "#5b3496",
+      "#6a3fb0",
+      "#8b5fd6",
+      "#a77ff0",
+      "#7a4cc4"
+    ],
+    "deco": [
+      "#8b6bd6",
+      "#c9b0ff"
     ]
   },
   {
@@ -272,33 +275,37 @@ export const LEGEND_FX: LegendFx[] = [
       "#ffb056",
       "#ff7f3a"
     ],
-    "bolts": [
+    "deco": [
       "#fff04a",
       "#ffb800"
     ]
   },
   {
-    "effect": "stella",
-    "theme": "#ff8fc0",
+    "effect": "blaze",
+    "theme": "#ff5a3c",
     "sides": "LR",
     "ramp": [
-      "#ff4f9e",
-      "#ff7cb8",
-      "#ffa6cf",
-      "#ffc6b4",
-      "#ff8fc0"
+      "#d8240f",
+      "#ff4a1c",
+      "#ff7a1f",
+      "#ffa733",
+      "#ffd060"
+    ],
+    "deco": [
+      "#ff7a1f",
+      "#ffb43a"
     ]
   },
   {
-    "effect": "mystic",
-    "theme": "#3fe0b0",
-    "sides": "R",
+    "effect": "aurora",
+    "theme": "#9d8cff",
+    "sides": "LR",
     "ramp": [
-      "#00b884",
-      "#22d89e",
-      "#5ef0c0",
-      "#3ed6d6",
-      "#16b8a8"
+      "#7b4dff",
+      "#3fe0d0",
+      "#ff6ad5",
+      "#3fe0d0",
+      "#7b4dff"
     ]
   }
 ]

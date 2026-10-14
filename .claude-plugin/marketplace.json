@@ -10,7 +10,7 @@
       "name": "statusline",
       "source": "./",
       "description": "Cross-platform colored status line for Claude Code: directory, git branch, model, context usage, 5-hour rate limit with reset countdown, cross-session usage sync, and a rarity-rolled mascot drawn under the prompt that shows whether the turn is running, done or failed (each legend plays its own effect every 100 ms); an optional app mode draws the whole line in Claude Code and stops the script.",
-      "version": "1.13.0",
+      "version": "1.14.0",
       "author": {
         "name": "black-astro"
       },
