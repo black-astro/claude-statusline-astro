@@ -7,11 +7,11 @@ export type FacePaint = 'effect' | 'flat' | 'plain'
 // A legend's look (from LEGEND_FX in mascot-data.ts). Restated here because a
 // Client module stands alone.
 export type FaceFx = {
-  effect: 'azure' | 'luna' | 'volt' | 'stella' | 'mystic'
+  effect: 'azure' | 'bat' | 'volt' | 'blaze' | 'aurora'
   theme: string
   sides: string
   ramp: string[]
-  bolts?: string[]
+  deco?: string[]
 }
 
 // What the mascot says. `lines` take turns every ten seconds while `rotate`
@@ -132,6 +132,70 @@ function thunder(tick: number): number {
   }
 }
 
+// The bat's night: the body barely shows until lightning lights it.
+const NIGHT = '#2a2140'
+const DARK = '#241c30'
+// Fire from embers to white-hot, read from 0 to 1 (not a loop).
+const FIRE = ['#4a0500', '#8e0d05', '#c81e0e', '#f2401a', '#ff7a1f', '#ffb43a', '#ffe27a']
+function rampEdge(stops: string[], u: number): string {
+  const x = Math.max(0, Math.min(1, u)) * (stops.length - 1)
+  const i = Math.floor(x)
+  return mix(stops[i] ?? '#ffffff', stops[Math.min(i + 1, stops.length - 1)] ?? '#ffffff', x - i)
+}
+// Smooth value noise, for flames.
+function noise(x: number): number {
+  const i = Math.floor(x)
+  const a = (hash(i) % 1000) / 1000
+  const b = (hash(i + 1) % 1000) / 1000
+  return a + (b - a) * ease(x - i)
+}
+
+// ---- moving letters ----------------------------------------------------------
+// Besides colour, a legend's letters move: the bat's wings flap fast, the
+// fox's bolts turn bold while they strike, and paws (ฅ) lift now and then.
+// Every swap keeps the width, so the line never shifts.
+
+const WINGS: Record<string, string> = { '⎛': '⎝', '⎝': '⎛', '⎠': '⎞', '⎞': '⎠' }
+
+// Up and down every 200 ms for 3 s, then a 1 s glide.
+function wingsUp(t: number): boolean {
+  return t % 40 < 30 && Math.floor(t / 2) % 2 === 1
+}
+
+// Each 2.4-4 s window one paw, the other or both go up for 0.6 s (or none).
+function liftedPaws(cells: Cell[], t: number): Set<number> {
+  const paws = cells.flatMap((c, i) => (c.ch === 'ฅ' ? [i] : []))
+  if (paws.length === 0) return new Set()
+  let start = 0
+  for (let w = 0; ; w++) {
+    const len = 24 + (hash(w * 31) % 16)
+    if (t < start + len) {
+      const r = t - start
+      const at = 3 + (hash(w * 17 + 5) % (len - 12))
+      const pick = hash(w * 7 + 9) % 5
+      if (r < at || r >= at + 6 || pick === 0) return new Set()
+      if (pick <= 2 || paws.length === 1) return new Set([paws[pick === 1 ? 0 : paws.length - 1] ?? -1])
+      return new Set(paws)
+    }
+    start += len
+  }
+}
+
+function moveLetters(fx: FaceFx, cells: Cell[], t: number): Cell[] {
+  const lifted = liftedPaws(cells, t)
+  const flap = fx.effect === 'bat' && wingsUp(t)
+  let bolt = 0
+  return cells.map((c, i) => {
+    if (lifted.has(i)) return { ...c, ch: ' ' }
+    if (flap && WINGS[c.ch] !== undefined) return { ...c, ch: WINGS[c.ch] ?? c.ch }
+    if (fx.effect === 'volt' && c.deco && c.ch === 'ϟ') {
+      const st = bolt++ === 0 ? thunder(t) : thunder(Math.max(0, t - 1))
+      if (st > 0.3) return { ...c, ch: 'Ϟ' }
+    }
+    return c
+  })
+}
+
 const EFFECTS: Record<FaceFx['effect'], (fx: FaceFx, cells: Cell[], t: number) => string[]> = {
   // Water ripples run through the blue body; every 3 s a rainbow breath bursts
   // from ≋ and sweeps right to left, leaving a fading rainbow trail.
@@ -147,20 +211,16 @@ const EFFECTS: Record<FaceFx['effect'], (fx: FaceFx, cells: Cell[], t: number) =
       return col
     })
   },
-  // The ghost fades almost out and back in to bright silver; the moon glows
-  // gold when the ghost is faint; the sparkle twinkles on its own beat.
-  luna(fx, cells, t) {
+  // Night: the body sits in the dark with only its red eyes lit, until
+  // thunder strikes - each flash lights the whole bat and its swarm.
+  bat(fx, cells, t) {
     const n = cells.length
-    const p = 0.5 + 0.5 * Math.sin((TAU * t) / 30)
-    let slot = 0
+    const st = thunder(t)
     return cells.map((c, i) => {
-      if (c.deco) {
-        if (slot++ === 0) return mix('#c9a640', '#fff2b0', 1 - p)
-        const tw = (t + 5) % 14
-        return tw < 3 ? (['#ffffff', '#d8f4ff', '#a8d8ff'][tw] ?? '#ffffff') : mix('#5c6cb8', '#9fb4ff', p)
-      }
-      const col = rampAt(fx.ramp, (i / n) * 0.7 - t * 0.012)
-      return p < 0.5 ? lit(col, -0.72 * (1 - p * 2)) : lit(col, 0.55 * (p * 2 - 1))
+      if (c.deco) return st > 0 ? mix(DARK, '#efe4ff', st) : DARK
+      if (c.ch === '•') return st > 0 ? mix('#ff2040', '#ffd0d8', st * 0.5) : '#ff2040'
+      const body = lit(rampAt(fx.ramp, 0.2 + (0.4 * i) / n), 0.25)
+      return st > 0 ? mix(NIGHT, body, st) : st < 0 ? '#1c1628' : NIGHT
     })
   },
   // Only the bolts are yellow; they rest dim and strike bright, the right one
@@ -169,7 +229,7 @@ const EFFECTS: Record<FaceFx['effect'], (fx: FaceFx, cells: Cell[], t: number) =
     const n = cells.length
     const s0 = thunder(t)
     const s1 = thunder(Math.max(0, t - 1))
-    const bolts = fx.bolts ?? ['#ffe600', '#ffc400']
+    const bolts = fx.deco ?? ['#ffe600', '#ffc400']
     let slot = 0
     return cells.map((c, i) => {
       if (c.deco) {
@@ -182,31 +242,33 @@ const EFFECTS: Record<FaceFx['effect'], (fx: FaceFx, cells: Cell[], t: number) =
       return s0 > 0 ? lit(col, s0 * 0.7) : s0 < 0 ? lit(col, -0.35) : col
     })
   },
-  // Stardust: single letters of the pink body sparkle white, each on its own
-  // timer; the two side stars twinkle through the rainbow in turn.
-  stella(fx, cells, t) {
+  // Fire: every letter burns on its own flickering flame, mostly deep red
+  // with orange and yellow licks; a flare rolls through the body every few
+  // seconds; the hot springs dance orange to white-gold.
+  blaze(_fx, cells, t) {
     const n = cells.length
+    const flare = t % 36
+    const at = flare < 14 ? ease(flare / 14) * (n + 4) - 2 : -99
     let slot = 0
     return cells.map((c, i) => {
       if (c.deco) {
-        const k = slot++
-        const tw = (t + k * 9) % 18
-        const env = tw < 6 ? ([1, 0.75, 0.5, 0.3, 0.15, 0.05][tw] ?? 0) : 0
-        return lit(hsl(t * 8 + k * 180, 1, 0.62), env * 0.8)
+        const h = noise(t * 0.45 + slot++ * 17.3)
+        return h > 0.72 ? mix('#ffd84a', '#fff4c8', (h - 0.72) / 0.28) : mix('#ff5a14', '#ffb020', h / 0.72)
       }
-      const period = 16 + (hash(i * 31) % 14)
-      const tw = (t + (hash(i * 7 + 1) % period)) % period
-      const env = tw < 5 ? ([1, 0.7, 0.4, 0.2, 0.08][tw] ?? 0) : 0
-      return lit(rampAt(fx.ramp, i / n - t * 0.015), env * 0.9)
+      const d = Math.abs(i - at)
+      const h = 0.15 + 0.55 * noise(t * 0.32 + i * 3.7) + 0.3 * noise(t * 0.9 + i * 11.1) + (d < 3 ? 0.45 * (1 - d / 3) : 0)
+      return rampEdge(FIRE, Math.min(1, h) * 0.82)
     })
   },
-  // Aurora: the whole rainbow spread across the body, flowing; the crystal
-  // pulses white.
-  mystic(_fx, cells, t) {
+  // Aurora: violet, teal and pink waves weave through each other; the
+  // sparkles pulse.
+  aurora(_fx, cells, t) {
     const n = cells.length
-    return cells.map((c, i) =>
-      c.deco ? lit('#b07cff', 0.75 * (0.5 + 0.5 * Math.sin((TAU * t) / 12))) : hsl((i / n) * 300 - t * 9, 0.95, 0.66),
-    )
+    return cells.map((c, i) => {
+      if (c.deco) return lit('#b07cff', 0.6 * (0.5 + 0.5 * Math.sin((TAU * t) / 12)))
+      const w = 0.5 + 0.5 * Math.sin(TAU * (i / n - t * 0.03)) * Math.sin(TAU * (i / (n * 0.7) + t * 0.02))
+      return mix('#7b4dff', w > 0.5 ? '#3fe0d0' : '#ff6ad5', Math.abs(w - 0.5) * 2)
+    })
   },
 }
 
@@ -255,9 +317,10 @@ const MascotFace: ClientModule<FaceProps, FaceState> = (props, surface) => {
   // one space to the right in the legend's own steady colour.
   const cells = cellsOf(face, props.fx.sides)
   const colors = EFFECTS[props.fx.effect](props.fx, cells, tick)
+  const letters = moveLetters(props.fx, cells, tick)
   return (
     <Box flexDirection="row">
-      {cells.map((c, i) => (
+      {letters.map((c, i) => (
         <Text color={colors[i]} bold={props.bold}>
           {c.ch}
         </Text>

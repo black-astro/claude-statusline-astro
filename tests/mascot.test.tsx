@@ -111,7 +111,7 @@ const ABOVE = {
   },
 } as const
 
-const LUNA = FACES.legend[1]!
+const AZURE = FACES.legend[0]!
 const start = { cwd: '/', surface: 'terminal' } as const
 
 test('the roll signature matches the status line scripts', async () => {
@@ -125,13 +125,13 @@ test('the roll signature matches the status line scripts', async () => {
 })
 
 test('a legend sits at the right of the footer, bold, and its effect moves every 100 ms', async ($, on) => {
-  await machine(on, { tier: 'legend', index: 1 })
+  await machine(on, { tier: 'legend', index: 0 })
   await $.session.start(start)
   const ui = await $.ui.mount(RIGHT)
   const texts = async () => ui.findAll({ type: 'Text', in: 'mascot' })
 
   const before = await texts()
-  expect(before[0]?.text).toBe(Array.from(LUNA.frames[0]!)[0])
+  expect(before[0]?.text).toBe(Array.from(AZURE.frames[0]!)[0])
   expect(before[0]?.props.bold).toBe(true)
   const body = before[3]?.props.color
 
@@ -306,17 +306,19 @@ test('the commands answer by themselves: scripts run, colours stripped, no turn 
   expect(installed.text).toContain('Done.')
 })
 
-test('the bolts are the only yellow on Volt, and they strike now and then', async ($, on) => {
+test('the bolts are the only yellow on Volt, and they strike now and then, turning bold', async ($, on) => {
   await machine(on, { tier: 'legend', index: 2 })
   await $.session.start(start)
   const ui = await $.ui.mount(RIGHT)
   const rgb = (c: unknown) => [1, 3, 5].map(i => parseInt(String(c).slice(i, i + 2), 16))
   const brightest: number[] = [0, 0]
+  const bold = [false, false]
   for (let t = 0; t < 60; t++) {
     const cells = await ui.findAll({ type: 'Text', in: 'mascot' })
     const bolts = [cells[0]!, cells[Array.from(FACES.legend[2]!.frames[0]!).length - 1]!]
     bolts.forEach((b, k) => {
-      expect(b.text).toBe('ϟ')
+      expect(['ϟ', 'Ϟ']).toContain(b.text)
+      if (b.text === 'Ϟ') bold[k] = true
       const [r, g, bl] = rgb(b.props.color)
       // yellow (or the white of a strike): red over green over blue
       expect(r! >= g! && g! >= bl!).toBe(true)
@@ -327,6 +329,40 @@ test('the bolts are the only yellow on Volt, and they strike now and then', asyn
   // Within six seconds each bolt has struck at least once (a flash goes white).
   expect(brightest[0]).toBeGreaterThan(200)
   expect(brightest[1]).toBeGreaterThan(200)
+  // ...and turned into the bold bolt while it struck.
+  expect(bold).toEqual([true, true])
+  await ui.unmount()
+})
+
+test('the bat flaps its wings fast', async ($, on) => {
+  await machine(on, { tier: 'legend', index: 1 })
+  await $.session.start(start)
+  const ui = await $.ui.mount(RIGHT)
+  const wings = new Set<string>()
+  for (let t = 0; t < 10; t++) {
+    wings.add(String((await ui.findAll({ type: 'Text', in: 'mascot' }))[1]?.text))
+    await ui.advance(100)
+  }
+  // Within a second the left wing has been both up and down.
+  expect([...wings].sort()).toEqual(['⎛', '⎝'].sort())
+  await ui.unmount()
+})
+
+test('a legend with paws lifts one now and then', async ($, on) => {
+  await machine(on, { tier: 'legend', index: 4 })
+  await $.session.start(start)
+  const ui = await $.ui.mount(RIGHT)
+  const chars = Array.from(FACES.legend[4]!.frames[0]!)
+  const paws = chars.flatMap((c, i) => (c === 'ฅ' ? [i] : []))
+  let lifted = false
+  for (let t = 0; t < 120 && !lifted; t++) {
+    const cells = await ui.findAll({ type: 'Text', in: 'mascot' })
+    lifted = paws.some(i => cells[i]?.text === ' ')
+    // The face keeps its width: a lifted paw is a blank, never a gap.
+    expect(cells.slice(0, chars.length).length).toBe(chars.length)
+    await ui.advance(100)
+  }
+  expect(lifted).toBe(true)
   await ui.unmount()
 })
 

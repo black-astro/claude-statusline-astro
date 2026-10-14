@@ -37,11 +37,11 @@ FACES = {
         ('Songbird', ['ε(˶•ө•˶)з♪', 'ε(˶˘ө˘˶)з♪']),
     ],
     'legend': [
-        ('Azure', ['ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋', 'ʚ૮(˶ˋ–ﻌ–ˊ˶)აɞ≋', 'ʚ૮(˶ˋ●ﻌ●ˊ˶)აɞ≋', 'ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋']),
-        ('Luna', ['☾꒰˶ᵔ ᴗ ᵔ˶꒱✧', '☾꒰˶- ᴗ -˶꒱✧', '☾꒰˶ᵔ o ᵔ˶꒱✧', '☾꒰˶ᵔ ᴗ ᵔ˶꒱✧']),
-        ('Volt', ['ϟᐱ(˶•ﻌ•˶)ᐱϟ', 'ϟᐱ(˶˘ﻌ˘˶)ᐱϟ', 'ϟᐱ(˶–ﻌ–˶)ᐱϟ', 'ϟᐱ(˶˘ﻌ˘˶)ᐱϟ']),
-        ('Stella', ['✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧', '✦ʚ꒰˶-ᴗ-˶꒱ɞ✧', '✦ʚ꒰˶✧o✧˶꒱ɞ✧', '✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧']),
-        ('Mystic', ['/ᐠ˶ᓀ ω ᓂ˶ᐟ\\⟡', '/ᐠ˶ʘ ω ʘ˶ᐟ\\⟡', '/ᐠ˶- ω -˶ᐟ\\⟡', '/ᐠ˶ᓀ ω ᓂ˶ᐟ\\⟡']),
+        ('Azure', ['༺(^˶•ᴗ•˶^)༻', '༺(^˶–ᴗ–˶^)༻', '༺(^˶•o•˶^)༻', '༺(^˶•ᴗ•˶^)༻']),
+        ('Luna', ['ᵛ⎛⎝(˶•ⱅ•˶)⎠⎞ᵛ', 'ᵛ⎝⎛(˶•ⱅ•˶)⎞⎠ᵛ']),
+        ('Volt', ['ϟฅ/ᐠ˶•ﻌ•˶ᐟ\ฅϟ', 'ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ', 'ϟฅ/ᐠ˶–ﻌ–˶ᐟ\ฅϟ', 'ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ']),
+        ('Blaze', ['♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨', '♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨', '♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨', '♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨', '♨ฅʕ ◣ˋ‸ˊ◢ꐦ ʔฅ♨']),
+        ('Mystic', ['☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧', '☆ฅ^˶- ω -˶^ฅ✧', '☆ฅ^˶◕ ω ◕˶^ฅ✧', '☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧']),
     ],
     'dev': [('Root', ['｛・ω・｝', '｛－ω－｝']), ('Sudo', ['⟨◕ᴗ◕⟩', '⟨◠ᴗ◠⟩']), ('Kernel', ['［◉_◉］', '［◉‸◉］']), ('Daemon', ['⟨◣_◢⟩', '⟨◢_◣⟩'])]}
 
@@ -51,39 +51,45 @@ KIND = {
     'Bunny': '솜토끼', 'Teddy': '곰돌이', 'Penguin': '펭귄', 'Koala': '코알라', 'Sprite': '작은 정령',
     'Panda': '판다', 'Owl': '부엉이', 'Otter': '수달', 'Aloof': '도도한 고양이',
     'Sakura': '벚꽃 토끼', 'Sweetheart': '하트 강아지', 'Songbird': '노래 병아리',
-    'Azure': '아기 청룡', 'Luna': '달빛 유령', 'Volt': '번개 여우', 'Stella': '별빛 정령', 'Mystic': '신비 고양이',
+    'Azure': '아기 청룡', 'Luna': '달빛 박쥐', 'Volt': '번개 여우', 'Blaze': '불곰', 'Mystic': '마법 고양이',
 }
 
 TIER_ORDER = ['common', 'uncommon', 'rare', 'unique', 'legend']
 TIER_KO = {'common': '커먼', 'uncommon': '언커먼', 'rare': '레어', 'unique': '유니크', 'legend': '레전드'}
 
-# Each legend, in FACES order. `ramp` is the body's colour family, `sides`
-# says where its outside decorations sit (first and/or last character), and
-# `effect` names how the in-app mascot animates it, each one different:
-#   azure   water ripples, and every 3 s a rainbow breath sweeps from ≋
-#   luna    the ghost fades out and back in; the moon glows when it is faint
-#   volt    the bolts strike like thunder, in yellows only; the body flashes
-#   stella  stardust: single letters sparkle white; the side stars twinkle
-#   mystic  the whole rainbow flows across the body; the crystal pulses
-# `bolts` are the only yellows a legend wears (volt's two ϟ).
+# Each legend, in FACES order. `ramp` is the body's colour family (the status
+# line's gradient and the in-app body), `sides` says where its outside
+# decorations sit (first and/or last character), and `effect` names how the
+# in-app mascot animates it, each one different:
+#   azure   water ripples, and every 3 s a rainbow breath sweeps the body
+#   bat     dark with only red eyes; each thunder flash lights the whole bat;
+#           the wings flap fast (⎛⎝ ⎠⎞ <-> ⎝⎛ ⎞⎠)
+#   volt    the bolts strike like thunder in yellows, turning bold (ϟ -> Ϟ)
+#           while they flash; the body flashes with them
+#   blaze   every letter burns on its own flickering flame; a flare rolls
+#           through the body every few seconds
+#   aurora  violet, teal and pink waves weave through each other
+# Faces with paws (ฅ) also lift one paw or both now and then.
+# `deco` are the colours of the outside decorations when not the rainbow
+# (volt's two yellow bolts, the bat swarm, the hot springs).
 LEGEND_FX = [
-    {'effect': 'azure', 'name': '무지개 숨결', 'theme': '#33b5ff', 'sides': 'R',
+    {'effect': 'azure', 'name': '무지개 숨결', 'theme': '#33b5ff', 'sides': 'LR',
      'ramp': ['#1f5fff', '#2b8bff', '#33b5ff', '#46dcff', '#8af0ff']},
-    {'effect': 'luna', 'name': '달빛 맥동', 'theme': '#b9b2ff', 'sides': 'LR',
-     'ramp': ['#7f6dff', '#9d8cff', '#c3baff', '#e8ebff', '#a9c0ff']},
+    {'effect': 'bat', 'name': '번개 속 박쥐', 'theme': '#b48cff', 'sides': 'LR',
+     'ramp': ['#5b3496', '#6a3fb0', '#8b5fd6', '#a77ff0', '#7a4cc4'], 'deco': ['#8b6bd6', '#c9b0ff']},
     {'effect': 'volt', 'name': '천둥 번개', 'theme': '#ff913a', 'sides': 'LR',
-     'ramp': ['#ff4e2e', '#ff6f2e', '#ff913a', '#ffb056', '#ff7f3a'], 'bolts': ['#fff04a', '#ffb800']},
-    {'effect': 'stella', 'name': '별가루 반짝임', 'theme': '#ff8fc0', 'sides': 'LR',
-     'ramp': ['#ff4f9e', '#ff7cb8', '#ffa6cf', '#ffc6b4', '#ff8fc0']},
-    {'effect': 'mystic', 'name': '무지개 오로라', 'theme': '#3fe0b0', 'sides': 'R',
-     'ramp': ['#00b884', '#22d89e', '#5ef0c0', '#3ed6d6', '#16b8a8']},
+     'ramp': ['#ff4e2e', '#ff6f2e', '#ff913a', '#ffb056', '#ff7f3a'], 'deco': ['#fff04a', '#ffb800']},
+    {'effect': 'blaze', 'name': '활활 불꽃', 'theme': '#ff5a3c', 'sides': 'LR',
+     'ramp': ['#d8240f', '#ff4a1c', '#ff7a1f', '#ffa733', '#ffd060'], 'deco': ['#ff7a1f', '#ffb43a']},
+    {'effect': 'aurora', 'name': '오로라', 'theme': '#9d8cff', 'sides': 'LR',
+     'ramp': ['#7b4dff', '#3fe0d0', '#ff6ad5', '#3fe0d0', '#7b4dff']},
 ]
 LEGEND_DESC = {
-    'azure': '파란 몸에 물결이 일렁이고, 3초마다 숨결 ≋ 에서 뿜어진 무지개가 몸을 훑고 지나갑니다',
-    'luna': '3초마다 희미하게 사라졌다가 은빛으로 다시 나타나고, 흐려질 때 달 ☾ 이 금빛으로 밝아집니다',
-    'volt': '양옆 번개 ϟ 만 노란색으로 불규칙하게 번쩍-어둑-번쩍 치고, 칠 때마다 몸이 하얗게 번쩍입니다',
-    'stella': '분홍 몸 곳곳에서 별가루가 하나씩 하얗게 반짝이고, 양옆 별이 무지개색으로 번갈아 반짝입니다',
-    'mystic': '몸 전체에 무지개 일곱 색이 펼쳐져 흐르고, 수정 ⟡ 이 하얗게 맥동합니다',
+    'azure': '파란 몸에 물결이 일렁이고, 3초마다 무지개 숨결이 몸을 훑고 지나갑니다',
+    'bat': '어둠 속에 빨간 눈만 빛나다가 천둥이 칠 때마다 박쥐와 양옆 박쥐 떼가 드러나고, 날개가 빠르게 파닥입니다',
+    'volt': '양옆 번개가 노랗게 불규칙하게 치고, 칠 때마다 굵은 번개 Ϟ 로 바뀌며 몸이 하얗게 번쩍입니다. 가끔 발바닥을 들어 올립니다',
+    'blaze': '글자마다 불꽃이 일렁이고 몇 초마다 불길이 몸을 훑고 지나갑니다. 가끔 발바닥을 들어 올립니다',
+    'aurora': '보라, 청록, 분홍 물결이 서로 엮이며 흐릅니다. 가끔 발바닥을 들어 올립니다',
 }
 GRADIENT_STEPS = 36
 
@@ -138,6 +144,11 @@ def validate():
     if dup:
         ok = False
         print('DUPLICATE NAMES', dup)
+    for t in TIER_ORDER:
+        for n, _ in FACES[t]:
+            if n not in INTRO:
+                ok = False
+                print('NO INTRO', n)
     if len(LEGEND_FX) != len(FACES['legend']):
         ok = False
         print('LEGEND_FX does not match the legends')
@@ -179,7 +190,7 @@ RAINBOW = [_hsl2hex(k * 360 / 7, 0.95, 0.66) for k in range(7)]
 
 
 def deco_colors(fx):
-    return fx.get('bolts') or RAINBOW
+    return fx.get('deco') or RAINBOW
 
 
 def cube_index(r, g, b):
@@ -254,15 +265,34 @@ SCRIPT_TALK = {
 }
 SCRIPT_TALK_ERROR = ['앗, 넘어졌어요…', '으앙, 실패했어요…']
 
-# What a freshly drawn mascot says, by tier ({0} is its name).
+# What a freshly drawn mascot says: each one introduces itself in a word of
+# its own and its name. Dev faces keep the terse tier line ({0} is the name).
 INTRO = {
-    'common': '"뿅! 나 {0}!"',
-    'uncommon': '"안녕! 나는 {0}, 잘 부탁해!"',
-    'rare': '"반가워요! 제 이름은 {0}!"',
-    'unique': '"짜잔! {0} 등장이에요!"',
-    'legend': '"드디어 만났네요! 나는 {0}, 오늘 하루 잘 부탁해요!"',
-    'dev': '"{0}. 로그인 완료."',
+    'Kitten': '"냥! 나는 Kitten, 아기 고양이예요!"',
+    'Puppy': '"멍멍! 나는 Puppy, 강아지예요!"',
+    'Chick': '"삐약! 나는 Chick, 병아리예요!"',
+    'Boo': '"까꿍! 나는 Boo, 꼬마 유령이에요!"',
+    'Hamster': '"쪼르르! 나는 Hamster, 햄스터예요!"',
+    'Piglet': '"꿀꿀! 나는 Piglet, 아기 돼지예요!"',
+    'Bunny': '"깡총! 나는 Bunny, 솜토끼예요!"',
+    'Teddy': '"폭신! 나는 Teddy, 곰돌이예요!"',
+    'Penguin': '"뒤뚱! 나는 Penguin, 펭귄이에요!"',
+    'Koala': '"하암~ 나는 Koala, 코알라예요!"',
+    'Sprite': '"팔랑! 나는 Sprite, 작은 정령이에요!"',
+    'Panda': '"냠냠! 나는 Panda, 판다예요!"',
+    'Owl': '"부엉! 나는 Owl, 부엉이예요!"',
+    'Otter': '"퐁당! 나는 Otter, 수달이에요!"',
+    'Aloof': '"흥, 나는 Aloof, 도도한 고양이예요."',
+    'Sakura': '"살랑! 나는 Sakura, 벚꽃 토끼예요!"',
+    'Sweetheart': '"두근! 나는 Sweetheart, 하트 강아지예요!"',
+    'Songbird': '"랄랄라♪ 나는 Songbird, 노래 병아리예요!"',
+    'Azure': '"크앙! 나는 Azure, 아기 청룡이에요!"',
+    'Luna': '"파닥파닥! 나는 Luna, 달빛 박쥐예요!"',
+    'Volt': '"찌릿! 나는 Volt, 번개 여우예요!"',
+    'Blaze': '"으르렁! 나는 Blaze, 불곰이에요!"',
+    'Mystic': '"쉿! 나는 Mystic, 마법 고양이예요!"',
 }
+INTRO_DEV = '"{0}. 로그인 완료."'
 
 # What the in-app mascot says, by tier. The higher the tier, the more it has
 # to say. Rare and above also say what the turn is doing (reading, editing,
@@ -363,7 +393,7 @@ def sh_talk():
 def sh_legend():
     out = ['# Legend colours, generated by docs/legend/render.py. Numbered by legend',
            '# (1-5): the body ramp (36 cells around a loop), the decoration colours',
-           '# (seven rainbow hues, or the two yellows of the bolts) and the colour the',
+           '# (seven rainbow hues, or that legend’s own colours) and the colour the',
            '# spoken line wears. One set in 24-bit colour, one snapped to the xterm cube.']
     for tc, tag in ((True, 'TRUE'), (False, '256')):
         for i, fx in enumerate(LEGEND_FX):
@@ -403,7 +433,7 @@ def ps_talk():
 def ps_legend():
     out = ['# Legend colours, generated by docs/legend/render.py, in legend order: the',
            '# body ramp (36 cells around a loop), the decoration colours (seven rainbow',
-           '# hues, or the two yellows of the bolts) and the colour the spoken line',
+           '# hues, or that legend’s own colours) and the colour the spoken line',
            '# wears. One set in 24-bit colour, one snapped to the xterm cube.']
     for tc, tag in ((True, 'True'), (False, '256')):
         out.append('$LegendRamp%s = %s' % (tag, _ps_list('|'.join(codes_of(ramp(fx['ramp']), tc)) for fx in LEGEND_FX)))
@@ -415,9 +445,21 @@ def ps_legend():
 
 def ps_intro():
     out = ['$Intro = @{']
-    for tier in SCRIPT_TIERS:
-        out.append("    %s = '%s'" % (tier, INTRO[tier]))
+    for tier in TIER_ORDER:
+        for name, _ in FACES[tier]:
+            out.append("    %s = '%s'" % (name, INTRO[name]))
     out.append('}')
+    out.append("$IntroDev = '%s'" % INTRO_DEV)
+    return '\n'.join(out)
+
+
+def sh_intro():
+    out = ['intro_line() {', '    case "$2" in']
+    for tier in TIER_ORDER:
+        for name, _ in FACES[tier]:
+            out.append("        %s) printf %%s '%s' ;;" % (name, INTRO[name]))
+    out.append("        *) printf '%s' \"$2\" ;;" % INTRO_DEV.replace('{0}', '%s'))
+    out += ['    esac', '}']
     return '\n'.join(out)
 
 
@@ -428,7 +470,7 @@ def mod_data():
     tiers = ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']
     faces = {t: [{'name': n, 'frames': f} for n, f in FACES[t]] for t in tiers}
     flat = {t: xterm_hex(c) for t, c in FLAT_CELLS.items()}
-    fx = [{k: v for k, v in f.items() if k in ('effect', 'theme', 'sides', 'ramp', 'bolts')} for f in LEGEND_FX]
+    fx = [{k: v for k, v in f.items() if k in ('effect', 'theme', 'sides', 'ramp', 'deco')} for f in LEGEND_FX]
     talk = {t: {**MOD_TALK[t], 'quiz': [{'q': q, 'a': a} for q, a in MOD_TALK[t]['quiz']]} for t in tiers}
     dump = lambda v: json.dumps(v, ensure_ascii=False, indent=2)
     return '\n'.join([
@@ -436,7 +478,7 @@ def mod_data():
         '',
         "export type Tier = 'common' | 'uncommon' | 'rare' | 'unique' | 'legend' | 'dev'",
         "export type Activity = 'read' | 'search' | 'edit' | 'run' | 'web' | 'agent'",
-        "export type Effect = 'azure' | 'luna' | 'volt' | 'stella' | 'mystic'",
+        "export type Effect = 'azure' | 'bat' | 'volt' | 'blaze' | 'aurora'",
         'export type Riddle = { q: string; a: string }',
         'export type TierTalk = {',
         '  work: string[]',
@@ -448,8 +490,8 @@ def mod_data():
         '}',
         '// How a legend is drawn: its effect, its body colours, where its outside',
         '// decorations sit (first and/or last character), the colour its line',
-        '// wears, and for lightning the two yellows of the bolts.',
-        "export type LegendFx = { effect: Effect; theme: string; sides: string; ramp: string[]; bolts?: string[] }",
+        '// wears, and the colours of its decorations when they are not the rainbow.',
+        "export type LegendFx = { effect: Effect; theme: string; sides: string; ramp: string[]; deco?: string[] }",
         '',
         'export const FACES: Record<Tier, { name: string; frames: string[] }[]> = ' + dump(faces),
         '',
@@ -519,6 +561,11 @@ def swatch_svg(hexes):
     return chr(10).join(parts) + chr(10)
 
 
+def _code(face):
+    # A face holding a backtick needs a double-backtick code span.
+    return '`` %s ``' % face if '`' in face else '`%s`' % face
+
+
 def readme_tables():
     out = []
     for tier in TIER_ORDER:
@@ -528,7 +575,7 @@ def readme_tables():
             for i, (name, frames) in enumerate(FACES[tier]):
                 fx = LEGEND_FX[i]
                 out.append('| **%s** %s | ![%s](docs/legend/legend-%d.svg) | %s | **%s** · %s |' % (
-                    name, KIND[name], name, i + 1, ' · '.join('`%s`' % f for f in frames[:3]), fx['name'], LEGEND_DESC[fx['effect']]))
+                    name, KIND[name], name, i + 1, ' · '.join(_code(f) for f in dict.fromkeys(frames)), fx['name'], LEGEND_DESC[fx['effect']]))
         else:
             out.append('| 이름 | 얼굴 | 표정 |')
             out.append('| --- | --- | --- |')
@@ -604,6 +651,8 @@ if __name__ == '__main__':
         print(ps_talk())
     elif cmd == 'pslegend':
         print(ps_legend())
+    elif cmd == 'shintro':
+        print(sh_intro())
     elif cmd == 'psintro':
         print(ps_intro())
     elif cmd == 'html':
