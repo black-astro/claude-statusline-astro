@@ -67,7 +67,7 @@ echo "== 1. plain render, no roll yet"
 rm -rf "$CACHE"
 run_both plain "$P" > "$TMP/o1"
 if grep -q 'sh:DIR claude-code-statusline-astro | GIT ' "$TMP/o1" && grep -q '42%' "$TMP/o1" && grep -q '63%' "$TMP/o1"; then ok "sh renders DIR/GIT/CTX/5H"; else bad "sh basic render" "$(cat "$TMP/o1")"; fi
-if grep -q '（' "$TMP/o1"; then bad "mascot shown before any roll" "$(cat "$TMP/o1")"; else ok "no mascot before a roll"; fi
+if grep -qE '˶|ฅ|๑|（' "$TMP/o1"; then bad "mascot shown before any roll" "$(cat "$TMP/o1")"; else ok "no mascot before a roll"; fi
 lines=$(printf '%s' "$P" | $SH | wc -l | tr -d ' ')
 [ "$lines" -eq 1 ] && ok "sh prints exactly one line" || bad "sh line count" "$lines"
 
@@ -88,7 +88,7 @@ grep -q '오늘의 마스코트를 뽑았습니다' "$TMP/roll" && ok "sh --roll
 face_sh=$($SH --today | strip | sed -n 3p | sed 's/^  //; s/  .*//')
 [ -n "$face_sh" ] && ok "sh --today shows a face ($face_sh)" || bad "sh --today" ""
 other=$(payload 'another-session-9999' "$ROOT_W" 5 10 "$FUTURE")
-printf '%s' "$other" | $SH | strip | grep -q "$face_sh" && ok "brand-new session shows the same face (idle)" || bad "idle face in new session" ""
+printf '%s' "$other" | $SH | strip | grep -qF "$face_sh" && ok "brand-new session shows the same face (idle)" || bad "idle face in new session" ""
 if [ "$HAVE_PS" -eq 1 ]; then
     face_ps=$($PS -Today | strip | tr -d '\r' | sed -n 3p | sed 's/^  //; s/  .*//')
     [ "$face_ps" = "$face_sh" ] && ok "ps reads the same roll ($face_ps)" || bad "ps/sh face mismatch" "$face_ps vs $face_sh"
@@ -114,7 +114,7 @@ cp "$TMP/gacha.bak" "$CACHE/gacha.txt"
 # a roll stamped in the future (clock moved back) does not earn another roll
 awk '{ $2 = "20990101"; print }' "$CACHE/gacha.txt" > "$TMP/g2"   # signature no longer matches -> no mascot, and no roll either? roll must be allowed only when the file is valid
 cp "$TMP/gacha.bak" "$CACHE/gacha.txt"
-$SH --today | grep -q "$face_sh" && ok "original roll restored" || bad "restore" ""
+$SH --today | grep -qF "$face_sh" && ok "original roll restored" || bad "restore" ""
 
 echo "== 6. hostile payloads never break the line"
 for bad_payload in '' '{' 'null' '{"session_id":123}' '{"workspace":{"current_dir":"/nope/{weird}/dir"},"model":{"display_name":"X"},"context_window":{"used_percentage":"abc"}}' '{"rate_limits":{"five_hour":{"used_percentage":-50,"resets_at":"soon"}}}' '{"context_window":{"used_percentage":1e9}}'; do
@@ -143,10 +143,10 @@ rm -f "$CACHE"/rl-peer*.txt
 
 echo "== 8. options through the environment"
 STATUSLINE_MASCOT=0 sh "$ROOT/scripts/statusline.sh" < /dev/null > /dev/null   # sanity: runs
-if printf '%s' "$P" | STATUSLINE_MASCOT=0 $SH | strip | grep -q "$face_sh"; then bad "STATUSLINE_MASCOT=0 still shows the face" ""; else ok "STATUSLINE_MASCOT=0 hides the mascot"; fi
-if printf '%s' "$P" | STATUSLINE_MASCOT_BY_MOD=1 $SH | strip | grep -q "$face_sh"; then bad "sh draws the face the plugin already draws" ""; else ok "sh leaves the face to the plugin"; fi
+if printf '%s' "$P" | STATUSLINE_MASCOT=0 $SH | strip | grep -qF "$face_sh"; then bad "STATUSLINE_MASCOT=0 still shows the face" ""; else ok "STATUSLINE_MASCOT=0 hides the mascot"; fi
+if printf '%s' "$P" | STATUSLINE_MASCOT_BY_MOD=1 $SH | strip | grep -qF "$face_sh"; then bad "sh draws the face the plugin already draws" ""; else ok "sh leaves the face to the plugin"; fi
 if [ "$HAVE_PS" -eq 1 ]; then
-    if printf '%s' "$P" | STATUSLINE_MASCOT_BY_MOD=1 $PS | strip | grep -q "$face_sh"; then bad "ps draws the face the plugin already draws" ""; else ok "ps leaves the face to the plugin"; fi
+    if printf '%s' "$P" | STATUSLINE_MASCOT_BY_MOD=1 $PS | strip | grep -qF "$face_sh"; then bad "ps draws the face the plugin already draws" ""; else ok "ps leaves the face to the plugin"; fi
 fi
 printf 'working %s\n' "$(date +%s)" > "$CACHE/mascot-testsess.txt"
 with_talk=$(printf '%s' "$P" | $SH | strip)
@@ -196,6 +196,41 @@ echo "== 13. the plugin's mascot data is what render.py makes now"
 if command -v python >/dev/null 2>&1; then
     python docs/legend/render.py mod "$TMP/mascot-data.ts" > /dev/null
     cmp -s "$TMP/mascot-data.ts" hooks/mascot-data.ts && ok "hooks/mascot-data.ts is up to date" || bad "hooks/mascot-data.ts is stale" "run: python docs/legend/render.py mod hooks/mascot-data.ts"
+fi
+
+echo "== 14. legends: both scripts paint them alike, bolts stay yellow, old rolls keep a face"
+# Signs a roll with the test machine's key, the way the scripts do.
+sign_roll() {
+    _k=$(tr -d ' \t\n\r' < "$CACHE/.gacha-key")
+    _s=$(printf %s "roll|v1|20270115|1800000000|$1|$2" | openssl dgst -sha256 -hmac "$_k" | sed 's/.*= *//')
+    printf 'v1 20270115 1800000000 %s %s %s' "$1" "$2" "$_s" > "$CACHE/gacha.txt"
+}
+if command -v openssl >/dev/null 2>&1; then
+    for i in 0 1 2 3 4; do
+        sign_roll legend "$i"
+        a=$($SH --today | od -An -c | tr -d ' \n')
+        if [ "$HAVE_PS" -eq 1 ]; then
+            b=$($PS -Today | tr -d '\r' | od -An -c | tr -d ' \n')
+            [ "$a" = "$b" ] && ok "legend $i: identical in both scripts" || bad "legend $i differs" "$($SH --today | cat -v | sed -n 3p)"
+        fi
+    done
+    sign_roll legend 2
+    volt=$($SH --today | sed -n 3p)
+    case "$volt" in
+        *'38;2;255;240;74m'ϟ*'38;2;255;184;0m'ϟ*) ok "Volt: the bolts wear their two yellows" ;;
+        *) bad "Volt bolts" "$(printf '%s' "$volt" | cat -v)" ;;
+    esac
+    printf 'working %s\n' "$(date +%s)" > "$CACHE/mascot-testsess.txt"
+    talk=$(printf '%s' "$P" | $SH | sed 's/.*ϟ//')
+    n=$(printf '%s' "$talk" | grep -o "$(printf '\033')\[38;2" | wc -l | tr -d ' ')
+    [ "$n" -eq 1 ] && ok "a legend speaks in one colour" || bad "legend line colours" "$(printf '%s' "$talk" | cat -v)"
+    sign_roll common 11
+    $SH --today | strip | grep -qF '^(˶•(oo)•˶)^' && ok "a roll from the old 12-face roster wraps onto the new one" || bad "old roll index" "$($SH --today | strip)"
+    if [ "$HAVE_PS" -eq 1 ]; then
+        $PS -Today | strip | grep -qF '^(˶•(oo)•˶)^' && ok "ps wraps an old roll the same way" || bad "ps old roll index" ""
+    fi
+else
+    ok "skipped: no openssl to sign test rolls"
 fi
 
 echo

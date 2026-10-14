@@ -1,72 +1,100 @@
-# Single source of truth for the mascot faces.
-# Emits: sh strings, ps1 code-point tables, README tables, legend SVGs.
-import sys, unicodedata, os
+# Single source of truth for the mascot: faces, legend colours and effects,
+# and what it says.
+# Emits: sh/ps1 blocks, the plugin's mascot-data.ts, README tables, legend
+# SVGs and docs/preview.html.
+import sys, unicodedata, os, json
 
 # tier -> [(name, [frames...])]
+# Small, soft animals and spirits. Every face is one line, uses no combining
+# marks, and keeps its ears, paws and outline in every frame; only the eyes or
+# mouth change. Frame 0 is the resting face.
 FACES = {
     'error': [('Oops', ['（；へ；）', '（；ㅅ；）'])],
-    'common': [('Kitten', ['（・ω・）', '（－ω－）']), ('Cozy', ['（´ ᴗ ｀）', '（´ ᴖ ｀）']), ('Snooze', ['（ ˘ᴗ˘ ）z', '（ ˘ᴗ˘ ）Z']), ('Whiskers', ['（=・ェ・=）', '（=－ェ－=）']), ('Grin', ['（・∀・）', '（－∀－）']), ('Smiley', ['（˙◡˙）', '（˙‿˙）']), ('Side-eye', ['（￢_￢）', '（￢‿￢）']), ('Bored', ['（´-ι_-｀）', '（´-ι.-｀）']), ('Blank', ['（・_・）', '（・.・）']), ('Smirk', ['（≖‿≖）', '（≖_≖）']), ('Scowl', ['（◣‸◢）', '（◢‸◣）']), ('Pleased', ['（＾ｖ＾）', '（＾ｕ＾）'])],
-    'uncommon': [('Giggle', ['（๑˃ᴗ˂）', '（๑˂ᴗ˃）']), ('Rosy', ['（｡•ᴗ•｡）', '（｡•ᴖ•｡）']), ('Beam', ['（^▽^）', '（^∇^）']), ('Bright', ['（◕‿◕）', '（◠‿◠）']), ('Squee', ['（≧Д≦）', '（≧∀≦）']), ('Wink', ['（･ᵕ<）', '（-ᵕ<）']), ('Stare', ['（ㆆ_ㆆ）', '（ㆆ.ㆆ）']), ('Eyeroll', ['（◔_◔）', '（◔‸◔）']), ('Pout', ['（｡>ㅅ<｡）', '（｡>ㅁ<｡）']), ('Hamster', ['（・ㅂ・）', '（－ㅂ－）']), ('Dizzy', ['（＠_＠）', '（＠.＠）']), ('Gasp', ['（⊙o⊙）', '（⊙O⊙）'])],
-    'rare': [('Twinkle', ['（･ᴗ･）◇', '（-ᴗ-）◆']), ('Cheer', ['ヽ（•‿•）ノ', 'ヾ（•‿•）ノ']), ('Blossom', ['（◕‿◕）✿', '（◠‿◠）❀']), ('Hooray', ['\\（^o^）/', '\\（^O^）/']), ('Melody', ['（´▽｀）♪', '（´▽｀）♬']), ('Wave', ['（・ω・）ノ', '（－ω－）ノ']), ('Smug', ['（￣ｰ￣）ゞ', '（￣ｰ￣）ゝ']), ('Cool', ['（▼ω▼）b', '（▼ω▼）d']), ('Kiss', ['（´ε｀）♡', '（´ε｀）♥']), ('Scheme', ['（￢‿￢）☆', '（￢‿￢）★']), ('Gunslinger', ['（☞°ヮ°）☞', '（☜°ヮ°）☜']), ('Shrug', ['┐（´～｀）┌', '┐（´〜｀）┌'])],
-    'unique': [('Superstar', ['╰（☆▽☆）╯', '╰（★▽★）╯']), ('Jubilee', ['╭（◕ヮ◕）╮', '╭（◠ヮ◠）╮']), ('Lovestruck', ['┗（♡‿♡）┛', '┗（♥‿♥）┛']), ('Dazzle', ['＼（•∇•）／', '＼（•▽•）／']), ('Hurrah', ['⊂（＾ᴗ＾）⊃', '⊂（＾ᴖ＾）⊃']), ('Boss', ['╰（￣ヘ￣）╯', '╰（￣〜￣）╯']), ('Fury', ['┗（╬◣_◢）┛', '┗（╬◢_◣）┛']), ('Skeptic', ['⊂（￢_￢）⊃', '⊂（￢‿￢）⊃']), ('Villain', ['╭（▼ヘ▼）╮', '╭（▼〜▼）╮']), ('Grit', ['＼（⇀‸↼）／', '＼（⇀‿↼）／'])],
+    'common': [
+        ('Kitten', ['ฅ^•ω•^ฅ', 'ฅ^–ω–^ฅ']),
+        ('Puppy', ['U(˶•ﻌ•˶)U', 'U(˶˘ﻌ˘˶)U']),
+        ('Chick', ['(˶•ө•˶)', '(˶–ө–˶)']),
+        ('Boo', ['꒰˶•o•˶꒱', '꒰˶˘ᴗ˘˶꒱']),
+        ('Hamster', ['(๑• ﻌ •๑)', '(๑– ﻌ –๑)']),
+        ('Piglet', ['^(˶•(oo)•˶)^', '^(˶˘(oo)˘˶)^']),
+    ],
+    'uncommon': [
+        ('Bunny', ['૮(˶•ㅅ•˶)ა', '૮(˶˘ㅅ˘˶)ა']),
+        ('Teddy', ['ʕ(˶•ᴥ•˶)ʔ', 'ʕ(˶–ᴥ–˶)ʔ']),
+        ('Penguin', ['(˶•⊖•˶)', '(˶–⊖–˶)']),
+        ('Koala', ['◖(˶•●•˶)◗', '◖(˶–●–˶)◗']),
+        ('Sprite', ['໒꒰˶•ᴗ•˶꒱১', '໒꒰˶˘ᴗ˘˶꒱১']),
+    ],
+    'rare': [
+        ('Panda', ['ʕ˶◐ᴥ◑˶ʔ', 'ʕ˶●ᴥ●˶ʔ']),
+        ('Owl', ['{˶ʘvʘ˶}', '{˶ʘv-˶}']),
+        ('Otter', ['ʕ˶•ﻌ•˶ʔっ', 'ʕ˶˘ﻌ˘˶ʔっ']),
+        ('Aloof', ['ฅ(˶¬ω¬˶)ฅ', 'ฅ(˶-ω-˶)ฅ']),
+    ],
+    'unique': [
+        ('Sakura', ['❀૮(˶ᵔ ᵕ ᵔ˶)ა', '❀૮(˶- ᵕ -˶)ა']),
+        ('Sweetheart', ['∪(˶ᵔ ᴥ ᵔ˶)∪♡', '∪(˶ᵕ ᴥ ᵕ˶)∪♡']),
+        ('Songbird', ['ε(˶•ө•˶)з♪', 'ε(˶˘ө˘˶)з♪']),
+    ],
     'legend': [
-        ('Halo', ['·°⊰ ☆（●ᴗ●)ノ ☆ ⊱°·', '·°⊰ ☆ ヽ(●ᴗ●）☆ ⊱°·', '·°⊰ ☆（●o●)ノ ☆ ⊱°·', '·°⊰ ☆ ヽ(●ᴗ●）☆ ⊱°·']),
-        ('Wrath', ['≪◆ °（╬◣_◢)ψ ° ◆≫', '≪◆ ° ψ(◣_◢╬）° ◆≫', '≪◆ °（╬◣o◢)ψ ° ◆≫', '≪◆ ° ψ(◣_◢╬）° ◆≫']),
-        ('Overlord', ['《◆ ·（▼_▼)† · ◆》', '《◆ · †(▼_▼）· ◆》', '《◆ ·（▼‿▼)† · ◆》', '《◆ · †(▼_▼）· ◆》']),
-        ('Seraph', ['༺° ☆（◕‿◕)♪ ☆ °༻', '༺° ☆ ♪(◕‿◕）☆ °༻', '༺° ☆（◕ᴗ◕)♪ ☆ °༻', '༺° ☆ ♪(◕‿◕）☆ °༻']),
-        ('Wyvern', ['⋘° ◆（◈ω◈)ζ ◆ °⋙', '⋘° ◆ ζ(◈ω◈）◆ °⋙', '⋘° ◆（◈▽◈)ζ ◆ °⋙', '⋘° ◆ ζ(◈ω◈）◆ °⋙']),
+        ('Azure', ['ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋', 'ʚ૮(˶ˋ–ﻌ–ˊ˶)აɞ≋', 'ʚ૮(˶ˋ●ﻌ●ˊ˶)აɞ≋', 'ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋']),
+        ('Luna', ['☾꒰˶ᵔ ᴗ ᵔ˶꒱✧', '☾꒰˶- ᴗ -˶꒱✧', '☾꒰˶ᵔ o ᵔ˶꒱✧', '☾꒰˶ᵔ ᴗ ᵔ˶꒱✧']),
+        ('Volt', ['ϟᐱ(˶•ﻌ•˶)ᐱϟ', 'ϟᐱ(˶˘ﻌ˘˶)ᐱϟ', 'ϟᐱ(˶–ﻌ–˶)ᐱϟ', 'ϟᐱ(˶˘ﻌ˘˶)ᐱϟ']),
+        ('Stella', ['✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧', '✦ʚ꒰˶-ᴗ-˶꒱ɞ✧', '✦ʚ꒰˶✧o✧˶꒱ɞ✧', '✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧']),
+        ('Mystic', ['/ᐠ˶ᓀ ω ᓂ˶ᐟ\\⟡', '/ᐠ˶ʘ ω ʘ˶ᐟ\\⟡', '/ᐠ˶- ω -˶ᐟ\\⟡', '/ᐠ˶ᓀ ω ᓂ˶ᐟ\\⟡']),
     ],
     'dev': [('Root', ['｛・ω・｝', '｛－ω－｝']), ('Sudo', ['⟨◕ᴗ◕⟩', '⟨◠ᴗ◠⟩']), ('Kernel', ['［◉_◉］', '［◉‸◉］']), ('Daemon', ['⟨◣_◢⟩', '⟨◢_◣⟩'])]}
 
-# legend index -> palette name, mood-matched
-LEGEND_PALETTES = ['dawn', 'ember', 'radiance', 'sapphire', 'emerald']
-LEGEND_DESC = {
-    'dawn':    '금빛에서 크림색으로',
-    'ember':   '진한 붉은색에서 연한 붉은색으로',
-    'radiance':'연보라에서 흰빛과 은색으로',
-    'sapphire':'파랑에서 연한 하늘색으로',
-    'emerald': '초록에서 연한 민트로',
+# What each face is, for the README and the preview.
+KIND = {
+    'Kitten': '아기 고양이', 'Puppy': '강아지', 'Chick': '병아리', 'Boo': '꼬마 유령', 'Hamster': '햄스터', 'Piglet': '아기 돼지',
+    'Bunny': '솜토끼', 'Teddy': '곰돌이', 'Penguin': '펭귄', 'Koala': '코알라', 'Sprite': '작은 정령',
+    'Panda': '판다', 'Owl': '부엉이', 'Otter': '수달', 'Aloof': '도도한 고양이',
+    'Sakura': '벚꽃 토끼', 'Sweetheart': '하트 강아지', 'Songbird': '노래 병아리',
+    'Azure': '아기 청룡', 'Luna': '달빛 유령', 'Volt': '번개 여우', 'Stella': '별빛 정령', 'Mystic': '신비 고양이',
 }
-# RGB keyframes of each legend ramp. The scripts interpolate them into
-# GRADIENT_STEPS cells around a closed loop, so the band flows back into
-# itself without a seam.
-# One hue family per legend so no two read alike, and no cell darker than a
-# relative luminance of 0.07 so every legend stays visible on a black screen:
-#   dawn gold, crimson pink, royal tangerine, abyss cyan-ice, amethyst
-#   green-to-navy, ember blood red, radiance lavender-silver.
-PALETTES = {
-    'dawn':    ['8f6508', 'd09a00', 'ffcc33', 'ffe9a3', 'fff8e1'],
-    'ember':   ['a82524', 'd63c3c', 'ff6464', 'ff9595', 'ffbdb5'],
-    'radiance':['8a78e0', 'bfb2f5', 'ece6ff', 'ffffff', 'd0d5e0', 'a9afc0'],
-    'sapphire':['2b4aa8', '3f70e0', '6a9cff', 'a0c4ff', 'd6e6ff'],
-    'emerald': ['0f7a4a', '17a86a', '3fd68f', '8ff0c0', 'd0ffe8'],
+
+TIER_ORDER = ['common', 'uncommon', 'rare', 'unique', 'legend']
+TIER_KO = {'common': '커먼', 'uncommon': '언커먼', 'rare': '레어', 'unique': '유니크', 'legend': '레전드'}
+
+# Each legend, in FACES order. `ramp` is the body's colour family, `sides`
+# says where its outside decorations sit (first and/or last character), and
+# `effect` names how the in-app mascot animates it, each one different:
+#   azure   water ripples, and every 3 s a rainbow breath sweeps from ≋
+#   luna    the ghost fades out and back in; the moon glows when it is faint
+#   volt    the bolts strike like thunder, in yellows only; the body flashes
+#   stella  stardust: single letters sparkle white; the side stars twinkle
+#   mystic  the whole rainbow flows across the body; the crystal pulses
+# `bolts` are the only yellows a legend wears (volt's two ϟ).
+LEGEND_FX = [
+    {'effect': 'azure', 'name': '무지개 숨결', 'theme': '#33b5ff', 'sides': 'R',
+     'ramp': ['#1f5fff', '#2b8bff', '#33b5ff', '#46dcff', '#8af0ff']},
+    {'effect': 'luna', 'name': '달빛 맥동', 'theme': '#b9b2ff', 'sides': 'LR',
+     'ramp': ['#7f6dff', '#9d8cff', '#c3baff', '#e8ebff', '#a9c0ff']},
+    {'effect': 'volt', 'name': '천둥 번개', 'theme': '#ff913a', 'sides': 'LR',
+     'ramp': ['#ff4e2e', '#ff6f2e', '#ff913a', '#ffb056', '#ff7f3a'], 'bolts': ['#fff04a', '#ffb800']},
+    {'effect': 'stella', 'name': '별가루 반짝임', 'theme': '#ff8fc0', 'sides': 'LR',
+     'ramp': ['#ff4f9e', '#ff7cb8', '#ffa6cf', '#ffc6b4', '#ff8fc0']},
+    {'effect': 'mystic', 'name': '무지개 오로라', 'theme': '#3fe0b0', 'sides': 'R',
+     'ramp': ['#00b884', '#22d89e', '#5ef0c0', '#3ed6d6', '#16b8a8']},
+]
+LEGEND_DESC = {
+    'azure': '파란 몸에 물결이 일렁이고, 3초마다 숨결 ≋ 에서 뿜어진 무지개가 몸을 훑고 지나갑니다',
+    'luna': '3초마다 희미하게 사라졌다가 은빛으로 다시 나타나고, 흐려질 때 달 ☾ 이 금빛으로 밝아집니다',
+    'volt': '양옆 번개 ϟ 만 노란색으로 불규칙하게 번쩍-어둑-번쩍 치고, 칠 때마다 몸이 하얗게 번쩍입니다',
+    'stella': '분홍 몸 곳곳에서 별가루가 하나씩 하얗게 반짝이고, 양옆 별이 무지개색으로 번갈아 반짝입니다',
+    'mystic': '몸 전체에 무지개 일곱 색이 펼쳐져 흐르고, 수정 ⟡ 이 하얗게 맥동합니다',
 }
 GRADIENT_STEPS = 36
 
-# Unique wears one fixed gradient, lavender to deep purple, stretched across
-# the text with no motion: a clear step below legend, a clear step above rare.
-UNIQUE_KEYS = ['d2bcff', 'a877ff', '7a3fe6', '4a1a9c']
-UNIQUE_STEPS = 8
-
-
-def ramp_linear(keys, n):
-    """n cells from the first keyframe to the last, no loop."""
-    m = len(keys)
-    rgb = [tuple(int(k[i:i + 2], 16) for i in (0, 2, 4)) for k in keys]
-    out = []
-    for s in range(n):
-        pos = s * (m - 1) / max(n - 1, 1)
-        seg = min(int(pos), m - 2)
-        t = pos - seg
-        a, b = rgb[seg], rgb[seg + 1]
-        out.append('#%02x%02x%02x' % tuple(int(a[c] + (b[c] - a[c]) * t + 0.5) for c in range(3)))
-    return out
+# Plain tiers wear one colour each, as xterm-256 cells.
+FLAT_CELLS = {'common': 253, 'uncommon': 120, 'rare': 117, 'unique': 141, 'dev': 51, 'error': 203}
 
 
 def ramp(keys, n=GRADIENT_STEPS):
-    """Same interpolation the scripts use: n cells around a closed loop."""
+    """n cells around a closed loop through the keyframes."""
     m = len(keys)
-    rgb = [tuple(int(k[i:i + 2], 16) for i in (0, 2, 4)) for k in keys]
+    rgb = [tuple(int(k.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4)) for k in keys]
     out = []
     for s in range(n):
         pos = s * m / n
@@ -75,9 +103,6 @@ def ramp(keys, n=GRADIENT_STEPS):
         a, b = rgb[seg], rgb[(seg + 1) % m]
         out.append('#%02x%02x%02x' % tuple(int(a[c] + (b[c] - a[c]) * t + 0.5) for c in range(3)))
     return out
-
-
-TIER_ORDER = ['common', 'uncommon', 'rare', 'unique', 'legend']
 
 
 def cw(ch, amb):
@@ -100,6 +125,9 @@ def validate():
             for f in frames:
                 assert '|' not in f and '#' not in f and "'" not in f, (tier, name)
                 assert all(ord(c) <= 0xFFFF for c in f), (tier, name, 'non-BMP')
+                if any(unicodedata.combining(c) for c in f):
+                    ok = False
+                    print('COMBINING', tier, name, f)
             w1 = {width(f, 1) for f in frames}
             w2 = {width(f, 2) for f in frames}
             if len(w1) != 1 or len(w2) != 1:
@@ -110,241 +138,13 @@ def validate():
     if dup:
         ok = False
         print('DUPLICATE NAMES', dup)
+    if len(LEGEND_FX) != len(FACES['legend']):
+        ok = False
+        print('LEGEND_FX does not match the legends')
     return ok
 
 
-def sh_block():
-    out = []
-    for tier in ['error', 'common', 'uncommon', 'rare', 'unique', 'legend', 'dev']:
-        faces = FACES[tier]
-        out.append("KAO_%s='%s'" % (tier.upper(), '|'.join('#'.join(fr) for _, fr in faces)))
-    out.append('')
-    for tier in ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']:
-        out.append("NAME_%s='%s'" % (tier.upper(), '|'.join(n for n, _ in FACES[tier])))
-    return '\n'.join(out)
-
-
-def ps_block():
-    out = []
-    for tier in ['error', 'common', 'uncommon', 'rare', 'unique', 'legend', 'dev']:
-        var = 'Kao' + tier.capitalize()
-        out.append("$%s = '%s'" % (var, '|'.join('#'.join(fr) for _, fr in FACES[tier])))
-    out.append('')
-    for tier in ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']:
-        out.append("$Name%s = '%s'" % (tier.capitalize(), '|'.join(n for n, _ in FACES[tier])))
-    out.append('')
-    out.append(ps_ramps())
-    return chr(10).join(out)
-
-
-def sh_palettes():
-    out = []
-    for name in ['dawn', 'crimson', 'royal', 'abyss', 'amethyst', 'ember', 'radiance']:
-        out.append("PAL_%s='%s'" % (name.upper(), ' '.join(PALETTES[name])))
-    out.append("LEGEND_PALETTES='%s'" % ' '.join(LEGEND_PALETTES))
-    return chr(10).join(out)
-
-
-def cube_index(r, g, b):
-    """Nearest cell of the xterm 6x6x6 cube, same rule as the scripts' fallback."""
-    def q(v):
-        if v < 48:
-            return 0
-        if v < 115:
-            return 1
-        return int((v - 35) / 40)
-    return 16 + 36 * q(r) + 6 * q(g) + q(b)
-
-
-def codes_of(hexes, true_color):
-    out = []
-    for h in hexes:
-        r, g, b = int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
-        out.append('38;2;%d;%d;%d' % (r, g, b) if true_color else '38;5;%d' % cube_index(r, g, b))
-    return out
-
-
-def ramp_codes(keys, true_color, n=GRADIENT_STEPS):
-    """The SGR colour parameters of one ramp, precomputed for the scripts."""
-    out = []
-    for h in ramp(keys, n):
-        r, g, b = int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
-        out.append('38;2;%d;%d;%d' % (r, g, b) if true_color else '38;5;%d' % cube_index(r, g, b))
-    return out
-
-
-PALETTE_ORDER = ['dawn', 'ember', 'radiance', 'sapphire', 'emerald']
-
-
-def ps_ramps():
-    out = ['# Legend ramps, 36 cells each, generated by docs/legend/render.py',
-           '# from the RGB keyframes there. One set in 24-bit colour, one snapped to the',
-           '# xterm cube for terminals that only know 256 colours.',
-           '$RampTrue = @{']
-    for name in PALETTE_ORDER:
-        out.append("    %s = '%s'" % (name, '|'.join(ramp_codes(PALETTES[name], True))))
-    out.append("    unique = '%s'" % '|'.join(codes_of(ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS), True)))
-    out.append('}')
-    out.append('$Ramp256 = @{')
-    for name in PALETTE_ORDER:
-        out.append("    %s = '%s'" % (name, '|'.join(ramp_codes(PALETTES[name], False))))
-    out.append("    unique = '%s'" % '|'.join(codes_of(ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS), False)))
-    out.append('}')
-    out.append("$LegendPalettes = @(%s)" % ', '.join("'%s'" % p for p in LEGEND_PALETTES))
-    return chr(10).join(out)
-
-
-def sh_ramps():
-    out = ['# Legend ramps, 36 cells each, generated by docs/legend/render.py',
-           '# from the RGB keyframes there. One set in 24-bit colour, one snapped to the',
-           '# xterm cube for terminals that only know 256 colours.']
-    for name in PALETTE_ORDER:
-        out.append("RAMP_TRUE_%s='%s'" % (name.upper(), ' '.join(ramp_codes(PALETTES[name], True))))
-    out.append("RAMP_TRUE_UNIQUE='%s'" % ' '.join(codes_of(ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS), True)))
-    for name in PALETTE_ORDER:
-        out.append("RAMP_256_%s='%s'" % (name.upper(), ' '.join(ramp_codes(PALETTES[name], False))))
-    out.append("RAMP_256_UNIQUE='%s'" % ' '.join(codes_of(ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS), False)))
-    out.append("LEGEND_PALETTES='%s'" % ' '.join(LEGEND_PALETTES))
-    return chr(10).join(out)
-
-
-def html_page():
-    import json
-    tiers = []
-    for t in TIER_ORDER:
-        tiers.append({'tier': t, 'faces': [{'name': n, 'frames': f} for n, f in FACES[t]]})
-    ramps = {name: ramp(PALETTES[name]) for name in PALETTE_ORDER}
-    data = {
-        'tiers': tiers,
-        'legendPalettes': LEGEND_PALETTES,
-        'ramps': ramps,
-        'unique': ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS),
-        'flat': {'common': xterm_hex(253), 'uncommon': xterm_hex(120), 'rare': xterm_hex(117)},
-        'labels': {'common': '커먼', 'uncommon': '언커먼', 'rare': '레어', 'unique': '유니크', 'legend': '레전드'},
-        'talk': {'common': '냥!', 'uncommon': '다했다!', 'rare': '끝났어요', 'unique': '다 끝냈습니다!', 'legend': '전부 끝냈습니다, 확인 부탁드려요!'},
-    }
-    return """<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><title>statusline preview</title>
-<style>
-body{margin:0;padding:24px;background:#0d1117;color:#c9d1d9;font:14px/1.6 'Cascadia Code','D2Coding','JetBrains Mono','Consolas','Malgun Gothic','Noto Sans CJK KR','Apple SD Gothic Neo',monospace}
-h1{font-size:18px;margin:0 0 4px}
-p.note{color:#8b949e;margin:0 0 24px;font-size:13px}
-h2{font-size:15px;margin:28px 0 10px;color:#8b949e;font-weight:normal;border-bottom:1px solid #21262d;padding-bottom:4px}
-table{border-collapse:collapse}
-td{padding:6px 14px 6px 0;vertical-align:middle;white-space:nowrap}
-td.name{color:#8b949e;width:110px}
-td.face{font-size:22px;letter-spacing:1px}
-td.line{font-size:16px}
-.sw{display:inline-block;width:18px;height:18px;border-radius:4px;margin-right:3px;vertical-align:middle}
-.bar{margin-top:32px;font-size:15px;color:#8b949e}
-.bar b{color:#fff;font-weight:normal}
-.g{color:#00ff00}.m{color:#ff5fff}.y{color:#ffff5f}
-</style></head><body>
-<h1>claude-statusline-astro 미리보기</h1>
-<p class="note">터미널과 같은 규칙으로 그립니다. 표정은 2초마다 바뀌고, 레전드는 그라데이션 위에서 시계에 맞춰 반짝입니다. 검은 배경 기준입니다.</p>
-<div class="bar"><b>DIR</b> my-project <span style="color:#555">|</span> <b>GIT</b> <span class="m">main</span> <span style="color:#555">|</span> <b>MODEL</b> <span class="y">Opus 5</span> <span style="color:#555">|</span> <b>CTX</b> <span class="g">[◼◼◻◻◻◻◻◻◻◻] 21%</span> <span style="color:#555">|</span> <b>5H</b> <span class="g">[◼◼◼◻◻◻◻◻◻◻] 34%</span> <span style="color:#555">1h49m</span> <span id="barface"></span></div>
-<div id="root"></div>
-<script>
-const D = """ + json.dumps(data, ensure_ascii=False) + """;
-const root = document.getElementById('root');
-function hash(seed, i, every){ let x=(seed*31+i*7+13)%2147483647; x=(x*48271)%2147483647; x=(x*48271)%2147483647; return x%every===0; }
-function paintLegend(text, ramp, seed){
-  const n=ramp.length, lo=0, hi=Math.floor(n/2), len=[...text].length;
-  return [...text].map((ch,i)=>{ const d=Math.abs(2*i-(len-1)); let idx=len>1? hi-Math.floor((hi-lo)*d/(len-1)) : hi; let col=ramp[idx]; if(hash(seed,i,4)){ const v=parseInt(col.slice(1),16); const lum=(((v>>16)&255)*299+((v>>8)&255)*587+(v&255)*114)/1000; col = lum>170 ? ramp[0] : ramp[hi]; } return '<span style="color:'+col+'">'+ch+'</span>'; }).join('');
-}
-function paintUnique(text){ const r=D.unique, n=r.length, len=[...text].length; return [...text].map((ch,i)=>{ const idx=len>1?Math.floor(i*(n-1)/(len-1)):0; return '<span style="color:'+r[idx]+'">'+ch+'</span>'; }).join(''); }
-function flat(text,c){ return '<span style="color:'+c+'">'+text+'</span>'; }
-function render(){
-  const now=Math.floor(Date.now()/1000), frame=Math.floor(now/2), seed=now%1000003;
-  let html='';
-  D.tiers.forEach(t=>{
-    html+='<h2>'+D.labels[t.tier]+' · '+t.faces.length+'종</h2><table>';
-    t.faces.forEach((f,fi)=>{
-      const text=f.frames[frame%f.frames.length];
-      let face, line, sw='';
-      if(t.tier==='legend'){ const ramp=D.ramps[D.legendPalettes[fi]]; face=paintLegend(text,ramp,seed); line=paintLegend(D.talk.legend,ramp,seed+1); sw=[...Array(10).keys()].map(k=>'<i class="sw" style="background:'+ramp[Math.round(k*(ramp.length-1)/9)]+'"></i>').join(''); }
-      else if(t.tier==='unique'){ face=paintUnique(text); line=paintUnique(D.talk.unique); sw=[...Array(10).keys()].map(k=>'<i class="sw" style="background:'+D.unique[Math.round(k*(D.unique.length-1)/9)]+'"></i>').join(''); }
-      else { const c=D.flat[t.tier]; face=flat(text,c); line=flat(D.talk[t.tier],c); sw='<i class="sw" style="background:'+c+'"></i>'; }
-      html+='<tr><td class="name">'+f.name+'</td><td class="face">'+face+'</td><td class="line">'+line+'</td><td>'+sw+'</td></tr>';
-    });
-    html+='</table>';
-  });
-  root.innerHTML=html;
-  const w=D.tiers[4].faces[1]; document.getElementById('barface').innerHTML=paintLegend(w.frames[frame%4], D.ramps[D.legendPalettes[1]], seed)+' '+paintLegend(D.talk.legend, D.ramps[D.legendPalettes[1]], seed+1);
-}
-render(); setInterval(render, 2000);
-</script></body></html>
-"""
-
-
-XTERM = None
-
-
-def xterm_hex(n):
-    global XTERM
-    if XTERM is None:
-        base = ['000000', '800000', '008000', '808000', '000080', '800080', '008080', 'c0c0c0',
-                '808080', 'ff0000', '00ff00', 'ffff00', '0000ff', 'ff00ff', '00ffff', 'ffffff']
-        XTERM = ['#' + b for b in base]
-        steps = [0, 95, 135, 175, 215, 255]
-        for r in steps:
-            for g in steps:
-                for b in steps:
-                    XTERM.append('#%02x%02x%02x' % (r, g, b))
-        for i in range(24):
-            v = 8 + i * 10
-            XTERM.append('#%02x%02x%02x' % (v, v, v))
-    return XTERM[n]
-
-
-def svg(text, ramp, offset=0):
-    fs = 22
-    unit = 13.6  # approx advance of one narrow cell at 22px
-    x = 10.0
-    parts = []
-    for i, ch in enumerate(text):
-        col = ramp[(offset + i) % len(ramp)]
-        parts.append('<text x="%.1f" y="22.0" fill="%s">%s</text>' % (x, col, ch))
-        x += unit * (2 if cw(ch, 1) == 2 else 1) * (0.81 if cw(ch, 1) == 2 else 1)
-    w = int(x + 8)
-    head = ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="42" viewBox="0 0 %d 42" role="img">\n'
-            '<rect width="100%%" height="100%%" rx="6" fill="#0d1117"/>\n'
-            '<g font-family="\'Segoe UI Symbol\',\'Malgun Gothic\',\'Noto Sans CJK KR\',\'Apple SD Gothic Neo\','
-            '\'Noto Sans Symbols 2\',\'DejaVu Sans\',monospace" font-size="%d" dominant-baseline="middle">\n'
-            % (w, w, fs))
-    return head + '\n'.join(parts) + '\n</g></svg>\n'
-
-
-def swatch_svg(hexes):
-    """Ten squares, one per cell of a bar, coloured along the ramp."""
-    cell, gap, pad = 22, 4, 4
-    n = len(hexes)
-    w = pad * 2 + cell * 10 + gap * 9
-    parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img">' % (w, cell + pad * 2, w, cell + pad * 2),
-             '<rect width="100%" height="100%" rx="6" fill="#0d1117"/>']
-    for i in range(10):
-        col = hexes[int(round(i * (n - 1) / 9))]
-        parts.append('<rect x="%d" y="%d" width="%d" height="%d" rx="4" fill="%s"/>' % (pad + i * (cell + gap), pad, cell, cell, col))
-    parts.append('</svg>')
-    return chr(10).join(parts) + chr(10)
-
-
-def readme_tables():
-    labels = {'common': '커먼', 'uncommon': '언커먼', 'rare': '레어', 'unique': '유니크', 'legend': '레전드'}
-    out = []
-    for tier in TIER_ORDER:
-        out.append('| 이름 | 얼굴 | 표정 |')
-        out.append('| --- | --- | --- |')
-        for i, (name, frames) in enumerate(FACES[tier]):
-            if tier == 'legend':
-                pal = LEGEND_PALETTES[i]
-                face = '![%s](docs/legend/legend-%d.svg)' % (frames[0], i + 1)
-                out.append('| **%s** | %s | %s |' % (name, face, ' · '.join('`%s`' % f for f in frames)))
-            else:
-                out.append('| **%s** | `%s` | %s |' % (name, frames[0], ' · '.join('`%s`' % f for f in frames[1:])))
-        out.append('')
-    return '\n'.join(out)
-
+# ---- colour ------------------------------------------------------------------
 
 def _rgb2hsl(r, g, b):
     r, g, b = r / 255, g / 255, b / 255
@@ -373,52 +173,101 @@ def _hsl2hex(h, s, l):
     return '#%02x%02x%02x' % tuple(max(0, min(255, int((v + m) * 255 + 0.5))) for v in (r, g, b))
 
 
-def theme_rainbow(keys):
-    """Seven hues around the palette's own colour, the way the effort picker
-    walks "max" through its rainbow but kept in the legend's colour family."""
-    r = ramp(keys)
-    mid = r[len(r) // 4]
-    h, s, _ = _rgb2hsl(int(mid[1:3], 16), int(mid[3:5], 16), int(mid[5:7], 16))
-    sat = max(0.35, min(0.85, s))
-    return [_hsl2hex(h + d, sat, 0.68) for d in (-42, -28, -14, 0, 14, 28, 42)]
+# Seven rainbow hues for the status line's decorations; the in-app mascot
+# turns the full wheel instead.
+RAINBOW = [_hsl2hex(k * 360 / 7, 0.95, 0.66) for k in range(7)]
 
 
-def hue_spread(centre, half, sat, light):
-    """Seven hues from centre - half to centre + half, one saturation and lightness."""
-    return [_hsl2hex(centre + k * half / 3, sat, light) for k in (-3, -2, -1, 0, 1, 2, 3)]
+def deco_colors(fx):
+    return fx.get('bolts') or RAINBOW
 
 
-# Six theme rainbows per legend, in LEGEND order. The in-app mascot wears one
-# at a time and moves to another now and then, at random; the first is the
-# palette's own rainbow (theme_rainbow). Picked by the maintainer from
-# legend-themes.html.
-def legend_themes():
-    own = [theme_rainbow(PALETTES[name]) for name in LEGEND_PALETTES]
-    return [
-        [('지금', own[0]), ('선셋 골드', hue_spread(35, 50, 0.85, 0.62)), ('샴페인', hue_spread(45, 18, 0.55, 0.78)),
-         ('태양', hue_spread(28, 30, 0.95, 0.58)), ('황금 무지개', hue_spread(50, 80, 0.8, 0.68)),
-         ('화이트 골드', hue_spread(48, 14, 0.7, 0.86))],
-        [('지금', own[1]), ('지옥불', hue_spread(15, 25, 0.95, 0.55)), ('블러드', hue_spread(355, 15, 0.85, 0.5)),
-         ('진홍 보라', hue_spread(335, 35, 0.8, 0.6)), ('루비', hue_spread(350, 20, 0.75, 0.7)),
-         ('용암', hue_spread(20, 40, 1, 0.52))],
-        [('지금', own[2]), ('은빛 라벤더', hue_spread(255, 20, 0.35, 0.78)), ('자수정', hue_spread(280, 25, 0.8, 0.6)),
-         ('은하', hue_spread(240, 45, 0.75, 0.65)), ('다크 로열', hue_spread(270, 20, 0.9, 0.55)),
-         ('어둠의 왕관', hue_spread(270, 24, 0.8, 0.6)[:6] + ['#f3cf68'])],
-        [('지금', own[3]), ('하늘 파스텔', hue_spread(205, 20, 0.7, 0.8)), ('오로라', hue_spread(190, 60, 0.75, 0.68)),
-         ('딥 오션', hue_spread(225, 20, 0.85, 0.58)), ('아이스', hue_spread(195, 15, 0.5, 0.82)),
-         ('천상', hue_spread(210, 30, 0.6, 0.86))],
-        [('지금', own[4]), ('에메랄드', hue_spread(150, 20, 0.8, 0.55)), ('독 라임', hue_spread(95, 30, 0.9, 0.6)),
-         ('비취', hue_spread(165, 25, 0.6, 0.65)), ('숲', hue_spread(130, 35, 0.55, 0.55)),
-         ('용의 숨결', hue_spread(135, 30, 0.8, 0.58)[:5] + ['#f3cf68', '#f3af68'])],
-    ]
+def cube_index(r, g, b):
+    """Nearest cell of the xterm 6x6x6 cube, same rule as the scripts' fallback."""
+    def q(v):
+        if v < 48:
+            return 0
+        if v < 115:
+            return 1
+        return int((v - 35) / 40)
+    return 16 + 36 * q(r) + 6 * q(g) + q(b)
 
 
-# What the in-app mascot says, by tier. The higher the tier, the better it
-# talks: common only makes noises, uncommon chats in 반말, rare is polite,
-# unique is sure of itself and legend speaks like a butler. Rare and above
-# also say what the turn is doing (reading, editing, running...), and while
-# a turn runs the line changes every ten seconds, with a riddle now and then
-# whose answer follows a few seconds later.
+def codes_of(hexes, true_color):
+    out = []
+    for h in hexes:
+        r, g, b = int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
+        out.append('38;2;%d;%d;%d' % (r, g, b) if true_color else '38;5;%d' % cube_index(r, g, b))
+    return out
+
+
+XTERM = None
+
+
+def xterm_hex(n):
+    global XTERM
+    if XTERM is None:
+        base = ['000000', '800000', '008000', '808000', '000080', '800080', '008080', 'c0c0c0',
+                '808080', 'ff0000', '00ff00', 'ffff00', '0000ff', 'ff00ff', '00ffff', 'ffffff']
+        XTERM = ['#' + b for b in base]
+        steps = [0, 95, 135, 175, 215, 255]
+        for r in steps:
+            for g in steps:
+                for b in steps:
+                    XTERM.append('#%02x%02x%02x' % (r, g, b))
+        for i in range(24):
+            v = 8 + i * 10
+            XTERM.append('#%02x%02x%02x' % (v, v, v))
+    return XTERM[n]
+
+
+# ---- talk ------------------------------------------------------------------
+# A soft baby-animal friend that talks well: short, warm lines, a little
+# more articulate with each tier. Legends tell riddles straight away.
+
+# What the status line scripts say, by tier.
+SCRIPT_TALK = {
+    'work': {
+        'common': ['영차영차, 하는 중이에요!', '꼼지락꼼지락 열심히!', '조금만 기다려 줘요!', '코드 냠냠 먹는 중이에요'],
+        'uncommon': ['꼬리 흔들면서 일하는 중!', '집중 집중! 금방 끝낼게요', '하나씩 꼭꼭 챙기고 있어요', '끝나면 간식 주실 거죠?'],
+        'rare': ['차근차근 살펴보는 중이에요', '어디가 아픈지 꼼꼼히 보고 있어요', '제일 빠른 닭은? 후다닭!', '개가 사람을 가르치면? 개인지도!'],
+        'unique': ['반짝반짝 정리하는 중이에요!', '예쁘게 마무리하고 있어요', '오리를 생으로 먹으면? 회오리!', '왕이 넘어지면? 킹콩!'],
+        'legend': ['물고기의 반대말은? 불고기!', '제일 빠른 새는? 눈 깜짝할 새!', '가장 억울한 도형은? 원통!', '소금이 죽으면? 죽염!', '천천히, 그래도 확실하게!'],
+        'dev': ['빌드 도는 중.', '컴파일 중.', '테스트 도는 중.'],
+    },
+    'done': {
+        'common': ['다 했어요!', '짠! 끝났어요!', '헤헤, 완성이에요!'],
+        'uncommon': ['짜잔, 다 끝냈어요!', '깔끔하게 해 놨어요, 칭찬해 줘요!', '완성! 확인해 볼래요?'],
+        'rare': ['다 됐어요, 꼼꼼히 봤어요!', '해냈어요! 한번 볼래요?'],
+        'unique': ['다 끝냈어요, 자신 있어요!', '완벽하게 해 놨어요!'],
+        'legend': ['부탁한 거 전부 끝냈어요!', '다 됐어요, 확인해 줄래요?'],
+        'dev': ['빌드 통과.', '커밋하시죠.', '배포 준비 완료.', '테스트 전부 초록불.'],
+    },
+    'notify': {
+        'common': ['저기요오, 봐 줄래요?', '여기 좀 봐 줘요!'],
+        'uncommon': ['잠깐만요, 물어볼 게 있어요!', '이것 좀 같이 봐 줄래요?'],
+        'rare': ['확인이 필요해요, 봐 줄래요?', '같이 정해야 할 게 있어요!'],
+        'unique': ['잠깐 봐 줄 수 있어요?', '여기 확인이 필요해요!'],
+        'legend': ['잠깐 확인해 줄래요?', '같이 봐야 할 게 있어요!'],
+        'dev': ['입력 대기 중.', '확인 요망.'],
+    },
+}
+SCRIPT_TALK_ERROR = ['앗, 넘어졌어요…', '으앙, 실패했어요…']
+
+# What a freshly drawn mascot says, by tier ({0} is its name).
+INTRO = {
+    'common': '"뿅! 나 {0}!"',
+    'uncommon': '"안녕! 나는 {0}, 잘 부탁해!"',
+    'rare': '"반가워요! 제 이름은 {0}!"',
+    'unique': '"짜잔! {0} 등장이에요!"',
+    'legend': '"드디어 만났네요! 나는 {0}, 오늘 하루 잘 부탁해요!"',
+    'dev': '"{0}. 로그인 완료."',
+}
+
+# What the in-app mascot says, by tier. The higher the tier, the more it has
+# to say. Rare and above also say what the turn is doing (reading, editing,
+# running...), and while a turn runs the line changes every ten seconds, with
+# a riddle now and then whose answer follows a few seconds later.
 #   work      lines while a turn runs
 #   quiz      (question, answer) riddles mixed into the work lines
 #   activity  what the latest tool call is doing, by kind
@@ -427,60 +276,55 @@ def legend_themes():
 #   error     when the turn failed
 MOD_TALK = {
     'common': {
-        'work': ['끙...', '낑낑', '웅...', '냥냥 열일 중', '뿌... 배고프다뿌', '삐약삐약 열심히', '꼬리 흔들며 일하는 중', '쿨쿨... 아, 일하는 중!'],
+        'work': ['영차영차!', '꼼지락꼼지락', '조금만 기다려 줘요!', '코드 냠냠 먹는 중', '으쌰, 거의 다 왔어요!'],
         'quiz': [],
         'activity': {},
-        'done': ['왕!', '냥!', '뿌!', '삐약!', '다 했다냥', '꼬리 살랑살랑'],
-        'notify': ['앙?', '웅?', '왕왕?', '냥? 이거 봐줘'],
-        'error': ['깨갱...', '냐앙... 망했다냥'],
+        'done': ['다 했어요!', '짠! 끝났어요!', '헤헤, 완성!'],
+        'notify': ['저기요오?', '여기 좀 봐 줘요!'],
+        'error': ['앗, 넘어졌어요…', '으앙…'],
     },
     'uncommon': {
-        'work': ['하는 중!', '조금만!', '열일 중!', '거의 다 했어!', '집중 모드 ON!', '끝나면 간식 줘!', '커피 한 잔 어때?'],
-        'quiz': [('소가 웃으면?', '우하하'), ('바나나가 웃으면?', '바나나킥'), ('왕이 넘어지면?', '킹콩')],
+        'work': ['꼬리 흔들면서 일하는 중!', '집중 집중! 금방 끝낼게요', '하나씩 꼭꼭 챙기고 있어요', '끝나면 간식 주실 거죠?', '거의 다 왔어요, 조금만!'],
+        'quiz': [('소가 웃으면?', '우하하!'), ('바나나가 웃으면?', '바나나킥!'), ('왕이 넘어지면?', '킹콩!')],
         'activity': {},
-        'done': ['다했다!', '끝!', '됐다!', '오케이, 확인해 봐!', '히히, 잘했지?'],
-        'notify': ['저기요!', '잠깐만!', '이거 좀 봐줘!'],
-        'error': ['앗, 실수...!', '으앗, 다시 해볼래?'],
+        'done': ['짜잔, 다 끝냈어요!', '깔끔하게 해 놨어요, 칭찬해 줘요!', '완성! 확인해 볼래요?'],
+        'notify': ['잠깐만요, 물어볼 게 있어요!', '이것 좀 같이 봐 줄래요?'],
+        'error': ['앗, 실수했어요…', '으앗, 다시 해 볼까요?'],
     },
     'rare': {
-        'work': ['작업 중이에요', '조금만 기다려요', '거의 다 왔어요', '차근차근 하고 있어요', '잘 되고 있어요'],
-        'quiz': [('세상에서 제일 빠른 닭은?', '후다닭'), ('개가 사람을 가르치면?', '개인지도'), ('소금이 죽으면?', '죽염'), ('미소의 반대말은?', '당기소')],
+        'work': ['차근차근 살펴보는 중이에요', '어디가 아픈지 꼼꼼히 보고 있어요', '잘 되고 있어요, 걱정 마요!', '하나씩 맞춰 보는 중이에요'],
+        'quiz': [('제일 빠른 닭은?', '후다닭!'), ('개가 사람을 가르치면?', '개인지도!'), ('소금이 죽으면?', '죽염!'), ('미소의 반대말은?', '당기소!')],
         'activity': {
-            'read': '파일을 읽어 보는 중이에요', 'search': '찾아보는 중이에요', 'edit': '코드를 고치고 있어요',
-            'run': '명령을 실행하고 있어요', 'web': '웹에서 찾아보고 있어요', 'agent': '도우미한테 맡겨 뒀어요',
+            'read': '파일을 꼼꼼히 읽어 보는 중이에요', 'search': '어디 있는지 찾아보는 중이에요', 'edit': '코드를 살살 고치고 있어요',
+            'run': '직접 돌려 보는 중이에요', 'web': '웹에서 찾아보고 있어요', 'agent': '친구한테 조금 맡겨 뒀어요',
         },
-        'done': ['다 됐어요', '끝났어요', '완료했어요! 한번 봐 주세요', '해냈어요!'],
-        'notify': ['확인해 주세요', '봐 주셔야 할 게 있어요'],
-        'error': ['앗, 실패했어요...', '잘 안 됐어요. 한번 봐 주세요'],
+        'done': ['다 됐어요, 꼼꼼히 봤어요!', '해냈어요! 한번 볼래요?', '끝났어요, 마음에 들면 좋겠어요!'],
+        'notify': ['확인이 필요해요, 봐 줄래요?', '같이 정해야 할 게 있어요!'],
+        'error': ['앗, 잘 안 됐어요… 같이 봐 줄래요?', '실패했어요. 다시 방법을 찾아볼게요'],
     },
     'unique': {
-        'work': ['처리하고 있어요!', '꼼꼼하게 진행 중입니다!', '금방 끝내겠습니다!', '지금 흐름 좋아요!', '조금만 기다려 주세요, 거의 다 왔어요!'],
+        'work': ['반짝반짝 정리하는 중이에요!', '예쁘게 마무리하고 있어요', '지금 흐름이 아주 좋아요!', '조금만요, 거의 다 왔어요!'],
         'quiz': [('오리를 생으로 먹으면?', '회오리!'), ('왕이 넘어지면?', '킹콩!'), ('세상에서 가장 뜨거운 과일은?', '천도복숭아!'),
-                 ('진짜 문제투성이인 것은?', '시험지!'), ('세상에서 가장 쉬운 숫자는?', '십구만(190000)!')],
+                 ('진짜 문제투성이인 것은?', '시험지!')],
         'activity': {
-            'read': '관련 파일을 꼼꼼히 읽고 있어요!', 'search': '필요한 부분을 찾아내는 중입니다!', 'edit': '코드를 깔끔하게 다듬는 중입니다!',
-            'run': '명령을 돌려서 직접 확인하고 있어요!', 'web': '웹에서 자료를 모으는 중입니다!', 'agent': '도우미에게 일을 나눠 맡겼어요!',
+            'read': '관련 파일을 하나하나 읽고 있어요!', 'search': '필요한 곳을 콕 찾아내는 중이에요!', 'edit': '코드를 예쁘게 다듬는 중이에요!',
+            'run': '직접 돌려서 확인하고 있어요!', 'web': '웹에서 자료를 모으는 중이에요!', 'agent': '친구들한테 일을 나눠 맡겼어요!',
         },
-        'done': ['작업 완료했어요! 확인해 보세요!', '깔끔하게 끝냈습니다!', '다 끝냈어요. 결과 한번 봐 주세요!', '마무리됐는지 확인 부탁해요!'],
-        'notify': ['확인 부탁해요!', '잠시 봐 주세요!', '결정이 필요해요!'],
-        'error': ['막혔어요... 원인을 같이 봐 주세요', '실패했어요. 방법을 다시 찾아볼게요'],
+        'done': ['다 끝냈어요, 자신 있어요!', '완벽하게 해 놨어요!', '마무리했어요, 결과 한번 봐 줄래요?'],
+        'notify': ['잠깐 봐 줄 수 있어요?', '여기 확인이 필요해요!', '골라 줘야 할 게 있어요!'],
+        'error': ['막혀 버렸어요… 원인을 같이 봐 줄래요?', '실패했어요, 다른 방법을 찾아볼게요!'],
     },
     'legend': {
-        'work': ['작업을 진행하고 있습니다. 잠시만 기다려 주십시오.', '흐름이 좋습니다. 곧 마무리하겠습니다.', '하나씩 확실하게 처리하고 있습니다.',
-                 '세부까지 꼼꼼히 살피는 중입니다.', '맡겨 주신 일, 정성껏 다루고 있습니다.'],
-        'quiz': [('넌센스 한 문제 드리겠습니다. 물고기의 반대말은?', '정답은 불고기입니다.'),
-                 ('넌센스 한 문제 드리겠습니다. 세상에서 가장 빠른 새는?', '정답은 눈 깜짝할 새입니다.'),
-                 ('넌센스 한 문제 드리겠습니다. 가장 억울한 도형은?', '정답은 원통입니다.'),
-                 ('넌센스 한 문제 드리겠습니다. 사과가 웃으면?', '정답은 풋사과입니다.'),
-                 ('넌센스 한 문제 드리겠습니다. 칼이 정색하면?', '정답은 검정색입니다.')],
+        'work': ['천천히, 그래도 확실하게!', '하나도 빠짐없이 챙기는 중이에요', '맡겨 준 일, 정성껏 하고 있어요', '흐름 좋아요, 곧 끝나요!'],
+        'quiz': [('물고기의 반대말은?', '불고기!'), ('제일 빠른 새는?', '눈 깜짝할 새!'), ('가장 억울한 도형은?', '원통!'),
+                 ('사과가 웃으면?', '풋사과!'), ('칼이 정색하면?', '검정색!')],
         'activity': {
-            'read': '관련 파일을 차례로 검토하고 있습니다.', 'search': '필요한 단서를 찾고 있습니다.', 'edit': '코드를 정성껏 다듬고 있습니다.',
-            'run': '명령을 실행해 결과를 직접 확인하고 있습니다.', 'web': '웹에서 최신 자료를 살펴보고 있습니다.', 'agent': '도우미에게 일부를 맡겨 함께 진행하고 있습니다.',
+            'read': '관련 파일을 차례차례 읽고 있어요', 'search': '단서를 쏙쏙 찾는 중이에요', 'edit': '코드를 정성껏 다듬고 있어요',
+            'run': '직접 돌려서 결과를 확인하고 있어요', 'web': '웹에서 새 자료를 살펴보는 중이에요', 'agent': '친구들과 나눠서 함께 하고 있어요',
         },
-        'done': ['요청하신 작업을 모두 마쳤습니다. 결과를 확인해 주십시오.', '작업을 성공적으로 마무리했습니다.',
-                 '마무리되었습니다. 의도하신 대로 되었는지 확인해 주십시오.', '모두 끝냈습니다. 더 필요하신 것이 있으면 말씀해 주십시오.'],
-        'notify': ['확인이 필요합니다. 잠시 살펴봐 주십시오.', '결정을 기다리고 있습니다.'],
-        'error': ['문제가 생겼습니다. 원인을 함께 살펴봐 주십시오.', '작업이 중단되었습니다. 확인 부탁드립니다.'],
+        'done': ['부탁한 거 전부 끝냈어요!', '다 됐어요, 확인해 줄래요?', '마무리했어요! 더 필요한 거 있으면 말해 줘요'],
+        'notify': ['잠깐 확인해 줄래요?', '같이 봐야 할 게 있어요!'],
+        'error': ['문제가 생겼어요… 같이 살펴봐 줄래요?', '중간에 멈췄어요, 확인해 줄래요?'],
     },
     'dev': {
         'work': ['빌드 도는 중.', '컴파일 중.', '테스트 도는 중.'],
@@ -492,15 +336,99 @@ MOD_TALK = {
     },
 }
 
+SCRIPT_TIERS = ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']
+
+
+# ---- script blocks ---------------------------------------------------------
+
+def sh_faces():
+    out = []
+    for tier in ['error', 'common', 'uncommon', 'rare', 'unique', 'legend', 'dev']:
+        out.append("KAO_%s='%s'" % (tier.upper(), '|'.join('#'.join(fr) for _, fr in FACES[tier])))
+    out.append('')
+    for tier in SCRIPT_TIERS:
+        out.append("NAME_%s='%s'" % (tier.upper(), '|'.join(n for n, _ in FACES[tier])))
+    return '\n'.join(out)
+
+
+def sh_talk():
+    out = []
+    for kind in ['work', 'done', 'notify']:
+        for tier in SCRIPT_TIERS:
+            out.append("TALK_%s_%s='%s'" % (kind.upper(), tier.upper(), '|'.join(SCRIPT_TALK[kind][tier])))
+    out.append("TALK_ERROR='%s'" % '|'.join(SCRIPT_TALK_ERROR))
+    return '\n'.join(out)
+
+
+def sh_legend():
+    out = ['# Legend colours, generated by docs/legend/render.py. Numbered by legend',
+           '# (1-5): the body ramp (36 cells around a loop), the decoration colours',
+           '# (seven rainbow hues, or the two yellows of the bolts) and the colour the',
+           '# spoken line wears. One set in 24-bit colour, one snapped to the xterm cube.']
+    for tc, tag in ((True, 'TRUE'), (False, '256')):
+        for i, fx in enumerate(LEGEND_FX):
+            out.append("LEGEND_RAMP_%s_%d='%s'" % (tag, i + 1, ' '.join(codes_of(ramp(fx['ramp']), tc))))
+        for i, fx in enumerate(LEGEND_FX):
+            out.append("LEGEND_DECO_%s_%d='%s'" % (tag, i + 1, ' '.join(codes_of(deco_colors(fx), tc))))
+        out.append("LEGEND_TALK_%s='%s'" % (tag, ' '.join(codes_of([fx['theme'] for fx in LEGEND_FX], tc))))
+    out.append("LEGEND_SIDES='%s'" % ' '.join(fx['sides'] for fx in LEGEND_FX))
+    return '\n'.join(out)
+
+
+def ps_faces():
+    out = []
+    for tier in ['error', 'common', 'uncommon', 'rare', 'unique', 'legend', 'dev']:
+        out.append("$Kao%s = '%s'" % (tier.capitalize(), '|'.join('#'.join(fr) for _, fr in FACES[tier])))
+    out.append('')
+    for tier in SCRIPT_TIERS:
+        out.append("$Name%s = '%s'" % (tier.capitalize(), '|'.join(n for n, _ in FACES[tier])))
+    return '\n'.join(out)
+
+
+def _ps_list(items):
+    return '@(%s)' % ', '.join("'%s'" % s for s in items)
+
+
+def ps_talk():
+    out = []
+    for kind, var in (('work', 'TalkWork'), ('done', 'TalkDone'), ('notify', 'TalkNotify')):
+        out.append('$%s = @{' % var)
+        for tier in SCRIPT_TIERS:
+            out.append('    %s = %s' % (tier, _ps_list(SCRIPT_TALK[kind][tier])))
+        out.append('}')
+    out.append('$TalkError = %s' % _ps_list(SCRIPT_TALK_ERROR))
+    return '\n'.join(out)
+
+
+def ps_legend():
+    out = ['# Legend colours, generated by docs/legend/render.py, in legend order: the',
+           '# body ramp (36 cells around a loop), the decoration colours (seven rainbow',
+           '# hues, or the two yellows of the bolts) and the colour the spoken line',
+           '# wears. One set in 24-bit colour, one snapped to the xterm cube.']
+    for tc, tag in ((True, 'True'), (False, '256')):
+        out.append('$LegendRamp%s = %s' % (tag, _ps_list('|'.join(codes_of(ramp(fx['ramp']), tc)) for fx in LEGEND_FX)))
+        out.append('$LegendDeco%s = %s' % (tag, _ps_list('|'.join(codes_of(deco_colors(fx), tc)) for fx in LEGEND_FX)))
+        out.append('$LegendTalk%s = %s' % (tag, _ps_list(codes_of([fx['theme'] for fx in LEGEND_FX], tc))))
+    out.append('$LegendSides = %s' % _ps_list(fx['sides'] for fx in LEGEND_FX))
+    return '\n'.join(out)
+
+
+def ps_intro():
+    out = ['$Intro = @{']
+    for tier in SCRIPT_TIERS:
+        out.append("    %s = '%s'" % (tier, INTRO[tier]))
+    out.append('}')
+    return '\n'.join(out)
+
+
+# ---- plugin data -----------------------------------------------------------
 
 def mod_data():
     """hooks/mascot-data.ts: what the in-app mascot draws and says."""
-    import json
     tiers = ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']
     faces = {t: [{'name': n, 'frames': f} for n, f in FACES[t]] for t in tiers}
-    shimmer = [[colors for _, colors in themes] for themes in legend_themes()]
-    flat = {'common': xterm_hex(253), 'uncommon': xterm_hex(120), 'rare': xterm_hex(117),
-            'dev': xterm_hex(51), 'error': xterm_hex(203)}
+    flat = {t: xterm_hex(c) for t, c in FLAT_CELLS.items()}
+    fx = [{k: v for k, v in f.items() if k in ('effect', 'theme', 'sides', 'ramp', 'bolts')} for f in LEGEND_FX]
     talk = {t: {**MOD_TALK[t], 'quiz': [{'q': q, 'a': a} for q, a in MOD_TALK[t]['quiz']]} for t in tiers}
     dump = lambda v: json.dumps(v, ensure_ascii=False, indent=2)
     return '\n'.join([
@@ -508,6 +436,7 @@ def mod_data():
         '',
         "export type Tier = 'common' | 'uncommon' | 'rare' | 'unique' | 'legend' | 'dev'",
         "export type Activity = 'read' | 'search' | 'edit' | 'run' | 'web' | 'agent'",
+        "export type Effect = 'azure' | 'luna' | 'volt' | 'stella' | 'mystic'",
         'export type Riddle = { q: string; a: string }',
         'export type TierTalk = {',
         '  work: string[]',
@@ -517,17 +446,16 @@ def mod_data():
         '  notify: string[]',
         '  error: string[]',
         '}',
+        '// How a legend is drawn: its effect, its body colours, where its outside',
+        '// decorations sit (first and/or last character), the colour its line',
+        '// wears, and for lightning the two yellows of the bolts.',
+        "export type LegendFx = { effect: Effect; theme: string; sides: string; ramp: string[]; bolts?: string[] }",
         '',
         'export const FACES: Record<Tier, { name: string; frames: string[] }[]> = ' + dump(faces),
         '',
         'export const ERROR_FRAMES: string[] = ' + dump(FACES['error'][0][1]),
         '',
-        '// Six theme rainbows per legend, seven hues each, walked one letter every',
-        '// 100 ms; the mascot moves from one to another at random now and then.',
-        'export const SHIMMER: string[][][] = ' + dump(shimmer),
-        '',
-        '// Unique wears this ramp stretched across the text, fixed.',
-        'export const UNIQUE_RAMP: string[] = ' + dump(ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS)),
+        'export const LEGEND_FX: LegendFx[] = ' + dump(fx),
         '',
         'export const FLAT: Record<string, string> = ' + dump(flat),
         '',
@@ -536,44 +464,163 @@ def mod_data():
     ])
 
 
+# ---- docs ------------------------------------------------------------------
+
+def legend_cells(text, i):
+    """The status line's still picture of a legend: the body ramp darkest at
+    the edges and lightest in the middle, decorations in their own colours."""
+    fx = LEGEND_FX[i]
+    r = ramp(fx['ramp'])
+    deco = deco_colors(fx)
+    hi = len(r) // 2
+    L = len(text)
+    out = []
+    slot = 0
+    for k, ch in enumerate(text):
+        side = ('L' if k == 0 else '') + ('R' if k == L - 1 else '')
+        if side and any(s in fx['sides'] for s in side):
+            out.append((ch, deco[(slot * (len(deco) // 2)) % len(deco)]))
+            slot += 1
+            continue
+        d = abs(2 * k - (L - 1))
+        out.append((ch, r[hi - (hi * d // (L - 1)) if L > 1 else hi]))
+    return out
+
+
+def svg(cells):
+    fs = 22
+    unit = 13.6  # approx advance of one narrow cell at 22px
+    x = 10.0
+    parts = []
+    for ch, col in cells:
+        text = ch.replace('&', '&amp;').replace('<', '&lt;')
+        parts.append('<text x="%.1f" y="22.0" fill="%s">%s</text>' % (x, col, text))
+        x += unit * (2 if cw(ch, 1) == 2 else 1) * (0.81 if cw(ch, 1) == 2 else 1)
+    w = int(x + 8)
+    head = ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="42" viewBox="0 0 %d 42" role="img">\n'
+            '<rect width="100%%" height="100%%" rx="6" fill="#0d1117"/>\n'
+            '<g font-family="\'Segoe UI Symbol\',\'Malgun Gothic\',\'Noto Sans CJK KR\',\'Apple SD Gothic Neo\','
+            '\'Noto Sans Symbols 2\',\'DejaVu Sans\',monospace" font-size="%d" dominant-baseline="middle">\n'
+            % (w, w, fs))
+    return head + '\n'.join(parts) + '\n</g></svg>\n'
+
+
+def swatch_svg(hexes):
+    """Ten squares coloured along a ramp."""
+    cell, gap, pad = 22, 4, 4
+    n = len(hexes)
+    w = pad * 2 + cell * 10 + gap * 9
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" role="img">' % (w, cell + pad * 2, w, cell + pad * 2),
+             '<rect width="100%" height="100%" rx="6" fill="#0d1117"/>']
+    for i in range(10):
+        col = hexes[int(round(i * (n - 1) / 9))]
+        parts.append('<rect x="%d" y="%d" width="%d" height="%d" rx="4" fill="%s"/>' % (pad + i * (cell + gap), pad, cell, cell, col))
+    parts.append('</svg>')
+    return chr(10).join(parts) + chr(10)
+
+
+def readme_tables():
+    out = []
+    for tier in TIER_ORDER:
+        if tier == 'legend':
+            out.append('| 이름 | 모습 | 얼굴 | 효과 |')
+            out.append('| --- | --- | --- | --- |')
+            for i, (name, frames) in enumerate(FACES[tier]):
+                fx = LEGEND_FX[i]
+                out.append('| **%s** %s | ![%s](docs/legend/legend-%d.svg) | %s | **%s** · %s |' % (
+                    name, KIND[name], name, i + 1, ' · '.join('`%s`' % f for f in frames[:3]), fx['name'], LEGEND_DESC[fx['effect']]))
+        else:
+            out.append('| 이름 | 얼굴 | 표정 |')
+            out.append('| --- | --- | --- |')
+            for name, frames in FACES[tier]:
+                out.append('| **%s** %s | `%s` | %s |' % (name, KIND[name], frames[0], ' · '.join('`%s`' % f for f in frames[1:])))
+        out.append('')
+    return '\n'.join(out)
+
+
+def html_page():
+    tiers = [{'tier': t, 'label': TIER_KO[t], 'faces': [{'name': n, 'kind': KIND[n], 'frames': f} for n, f in FACES[t]]} for t in TIER_ORDER]
+    legend = [[legend_cells(fr, i) for fr in frames] for i, (_, frames) in enumerate(FACES['legend'])]
+    data = {
+        'tiers': tiers,
+        'legend': legend,
+        'legendTalk': [fx['theme'] for fx in LEGEND_FX],
+        'flat': {t: xterm_hex(FLAT_CELLS[t]) for t in ('common', 'uncommon', 'rare', 'unique')},
+        'talk': {t: SCRIPT_TALK['done'][t][0] for t in TIER_ORDER},
+    }
+    return """<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>statusline preview</title>
+<style>
+body{margin:0;padding:24px;background:#0d1117;color:#c9d1d9;font:14px/1.6 'Cascadia Mono','D2Coding','JetBrains Mono','Consolas','Malgun Gothic',monospace}
+h1{font-size:18px;margin:0 0 4px}
+p.note{color:#8b949e;margin:0 0 24px;font-size:13px}
+h2{font-size:15px;margin:28px 0 10px;color:#8b949e;font-weight:normal;border-bottom:1px solid #21262d;padding-bottom:4px}
+table{border-collapse:collapse}
+td{padding:6px 14px 6px 0;vertical-align:middle;white-space:nowrap}
+td.name{color:#8b949e;width:170px}
+td.face{font-size:22px}
+td.line{font-size:15px}
+</style></head><body>
+<h1>claude-statusline-astro 미리보기</h1>
+<p class="note">상태줄 끝에 그려지는 모습입니다. 표정은 2초마다 바뀌고, 말은 얼굴 오른쪽에 한 칸 띄워 한 가지 색으로 나옵니다. 레전드의 움직이는 효과는 플러그인을 설치하면 프롬프트 아래에서 0.1초마다 그려집니다.</p>
+<div id="root"></div>
+<script>
+const D = """ + json.dumps(data, ensure_ascii=False) + """;
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+function render(){
+  const frame = Math.floor(Date.now() / 2000);
+  let html = '';
+  D.tiers.forEach(t => {
+    html += '<h2>' + t.label + ' · ' + t.faces.length + '종</h2><table>';
+    t.faces.forEach((f, fi) => {
+      const k = frame % f.frames.length;
+      let face, color;
+      if (t.tier === 'legend') { face = D.legend[fi][k].map(([ch, c]) => '<span style="color:' + c + '">' + esc(ch) + '</span>').join(''); color = D.legendTalk[fi]; }
+      else { color = D.flat[t.tier]; face = '<span style="color:' + color + '">' + esc(f.frames[k]) + '</span>'; }
+      html += '<tr><td class="name">' + f.name + ' · ' + f.kind + '</td><td class="face">' + face + '</td><td class="line" style="color:' + color + '">' + D.talk[t.tier] + '</td></tr>';
+    });
+    html += '</table>';
+  });
+  document.getElementById('root').innerHTML = html;
+}
+render(); setInterval(render, 2000);
+</script></body></html>
+"""
+
+
 if __name__ == '__main__':
     if not validate():
         sys.exit('validation failed')
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'check'
     if cmd == 'sh':
-        print(sh_block())
+        print(sh_faces())
+    elif cmd == 'shtalk':
+        print(sh_talk())
+    elif cmd == 'shlegend':
+        print(sh_legend())
     elif cmd == 'ps':
-        print(ps_block())
-    elif cmd == 'psramps':
-        print(ps_ramps())
-    elif cmd == 'shramps':
-        print(sh_ramps())
+        print(ps_faces())
+    elif cmd == 'pstalk':
+        print(ps_talk())
+    elif cmd == 'pslegend':
+        print(ps_legend())
+    elif cmd == 'psintro':
+        print(ps_intro())
     elif cmd == 'html':
         with open(sys.argv[2], 'w', encoding='utf-8', newline=chr(10)) as fh:
             fh.write(html_page())
         print('wrote', sys.argv[2])
-    elif cmd == 'shpal':
-        print(sh_palettes())
     elif cmd == 'readme':
         print(readme_tables())
     elif cmd == 'svg':
         outdir = sys.argv[2]
         os.makedirs(outdir, exist_ok=True)
         for i, (name, frames) in enumerate(FACES['legend']):
-            ramp_ = theme_rainbow(PALETTES[LEGEND_PALETTES[i]])
             with open(os.path.join(outdir, 'legend-%d.svg' % (i + 1)), 'w', encoding='utf-8', newline='\n') as fh:
-                fh.write(svg(frames[0], ramp_))
-        face = FACES['unique'][0][1][0]
-        lin = ramp_linear(UNIQUE_KEYS, UNIQUE_STEPS)
-        stretched = [lin[int(i * (len(lin) - 1) / max(len(face) - 1, 1))] for i in range(len(face))]
-        with open(os.path.join(outdir, 'unique.svg'), 'w', encoding='utf-8', newline='\n') as fh:
-            fh.write(svg(face, stretched))
-        for i, name in enumerate(LEGEND_PALETTES):
+                fh.write(svg(legend_cells(frames[0], i)))
             with open(os.path.join(outdir, 'swatch-%d.svg' % (i + 1)), 'w', encoding='utf-8', newline=chr(10)) as fh:
-                fh.write(swatch_svg(theme_rainbow(PALETTES[name])))
-        with open(os.path.join(outdir, 'swatch-unique.svg'), 'w', encoding='utf-8', newline=chr(10)) as fh:
-            fh.write(swatch_svg(lin))
-        print('wrote', len(FACES['legend']), 'legend svgs + unique.svg + swatches')
+                fh.write(swatch_svg(ramp(LEGEND_FX[i]['ramp'])))
+        print('wrote', len(FACES['legend']), 'legend svgs + swatches')
     elif cmd == 'mod':
         with open(sys.argv[2], 'w', encoding='utf-8', newline=chr(10)) as fh:
             fh.write(mod_data())

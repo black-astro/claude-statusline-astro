@@ -2,12 +2,12 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { LineInfo, LineMode, LinePlace, LineWindow, MascotActivity, MascotPlace, MascotRoll, MascotTurn } from '../types'
-import { ERROR_FRAMES, FACES, FLAT, SHIMMER, TALK, UNIQUE_RAMP } from './mascot-data'
+import { ERROR_FRAMES, FACES, FLAT, LEGEND_FX, TALK } from './mascot-data'
 import type { Activity, Riddle } from './mascot-data'
 import type { FaceProps, TalkPlan } from './mascot-face'
 
 // The mascot, drawn by Claude Code itself under the prompt so a legend can
-// shimmer every 100 ms; the status line only redraws every second or two.
+// play its effect every 100 ms; the status line only redraws every second or two.
 // In app mode the info line (DIR, GIT, MODEL, CTX, 5H) is drawn here too and
 // the status line command is switched off, so no script runs at all.
 
@@ -135,8 +135,10 @@ async function readRoll($: EngineInterface, cacheDir: string): Promise<MascotRol
     if (key === '' || v !== 'v1' || tier === undefined || !isTier(tier)) return null
     if ((await hmacHex(key, `roll|v1|${date}|${stamp}|${tier}|${idx}`)) !== sig) return null
     const index = Number(idx)
-    if (!Number.isInteger(index) || index < 0 || index >= FACES[tier].length) return null
-    return { tier, index }
+    const n = FACES[tier].length
+    if (!Number.isInteger(index) || index < 0 || n === 0) return null
+    // A roll from a longer, older roster wraps onto the current one, as in the scripts.
+    return { tier, index: index % n }
   } catch {
     return null
   }
@@ -230,13 +232,11 @@ async function faceProps($: EngineInterface): Promise<FaceProps | null> {
   const base = { frames: face.frames, talk, animate: t.state === 'working' }
 
   if (!s.isColored) return { ...base, paint: 'plain', colors: [], bold: false }
-  // Legend wears seven hues of one of its six theme rainbows, bold, walked
-  // like "max", and moves to another rainbow every 15 s.
+  // A legend plays its own effect, bold, and speaks in its own colour.
   if (r.tier === 'legend') {
-    const themes = SHIMMER[r.index] ?? []
-    return { ...base, paint: 'shimmer', colors: themes[0] ?? [], themes, bold: true }
+    const fx = LEGEND_FX[r.index]
+    if (fx !== undefined) return { ...base, paint: 'effect', colors: [fx.theme], fx, bold: true }
   }
-  if (r.tier === 'unique') return { ...base, paint: 'gradient', colors: UNIQUE_RAMP, bold: false }
   return { ...base, paint: 'flat', colors: [FLAT[r.tier] ?? ''], bold: r.tier === 'dev' }
 }
 

@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import { hmacHex, shortModel } from '../hooks/mascot'
-import { FACES, SHIMMER, TALK } from '../hooks/mascot-data'
+import { FACES, LEGEND_FX, TALK } from '../hooks/mascot-data'
 
 // A key shaped like the ones the hooks make: 64 hex characters.
 const KEY = '0123456789abcdef'.repeat(4)
@@ -111,7 +111,7 @@ const ABOVE = {
   },
 } as const
 
-const WRATH = FACES.legend[1]!
+const LUNA = FACES.legend[1]!
 const start = { cwd: '/', surface: 'terminal' } as const
 
 test('the roll signature matches the status line scripts', async () => {
@@ -124,21 +124,19 @@ test('the roll signature matches the status line scripts', async () => {
   )
 })
 
-test('a legend sits at the right of the footer, bold, and walks its hues every 100 ms', async ($, on) => {
+test('a legend sits at the right of the footer, bold, and its effect moves every 100 ms', async ($, on) => {
   await machine(on, { tier: 'legend', index: 1 })
   await $.session.start(start)
   const ui = await $.ui.mount(RIGHT)
-  const first = async () => (await ui.findAll({ type: 'Text', in: 'mascot' }))[0]
+  const texts = async () => ui.findAll({ type: 'Text', in: 'mascot' })
 
-  const head = await first()
-  expect(head?.text).toBe(Array.from(WRATH.frames[0]!)[0])
-  expect(head?.props.bold).toBe(true)
-  const startColor = head?.props.color
+  const before = await texts()
+  expect(before[0]?.text).toBe(Array.from(LUNA.frames[0]!)[0])
+  expect(before[0]?.props.bold).toBe(true)
+  const body = before[3]?.props.color
 
   await ui.advance(100)
-  expect((await first())?.props.color).not.toBe(startColor)
-  await ui.advance(600)
-  expect((await first())?.props.color).toBe(startColor)
+  expect((await texts())[3]?.props.color).not.toBe(body)
   await ui.unmount()
 })
 
@@ -308,25 +306,51 @@ test('the commands answer by themselves: scripts run, colours stripped, no turn 
   expect(installed.text).toContain('Done.')
 })
 
-test('a legend moves between its six theme rainbows, one every 15 s, never the same twice running', async ($, on) => {
-  await machine(on, { tier: 'legend', index: 3 })
+test('the bolts are the only yellow on Volt, and they strike now and then', async ($, on) => {
+  await machine(on, { tier: 'legend', index: 2 })
   await $.session.start(start)
   const ui = await $.ui.mount(RIGHT)
-  const themes = SHIMMER[3]!
-  expect(themes).toHaveLength(6)
-  // Which theme the face wears now, read from the colours of its first seven letters.
-  const worn = async () => {
-    const colors = (await ui.findAll({ type: 'Text', in: 'mascot' })).slice(0, 7).map(t => String(t.props.color))
-    return themes.findIndex(theme => colors.every(c => theme.includes(c)))
+  const rgb = (c: unknown) => [1, 3, 5].map(i => parseInt(String(c).slice(i, i + 2), 16))
+  const brightest: number[] = [0, 0]
+  for (let t = 0; t < 60; t++) {
+    const cells = await ui.findAll({ type: 'Text', in: 'mascot' })
+    const bolts = [cells[0]!, cells[Array.from(FACES.legend[2]!.frames[0]!).length - 1]!]
+    bolts.forEach((b, k) => {
+      expect(b.text).toBe('ϟ')
+      const [r, g, bl] = rgb(b.props.color)
+      // yellow (or the white of a strike): red over green over blue
+      expect(r! >= g! && g! >= bl!).toBe(true)
+      brightest[k] = Math.max(brightest[k]!, bl!)
+    })
+    await ui.advance(100)
   }
-  const seen: number[] = []
-  for (let slot = 0; slot < 8; slot++) {
-    const at = await worn()
-    expect(at).toBeGreaterThanOrEqual(0)
-    if (seen.length > 0) expect(at).not.toBe(seen[seen.length - 1])
-    seen.push(at)
-    await ui.advance(15_000)
+  // Within six seconds each bolt has struck at least once (a flash goes white).
+  expect(brightest[0]).toBeGreaterThan(200)
+  expect(brightest[1]).toBeGreaterThan(200)
+  await ui.unmount()
+})
+
+test('a legend speaks one space after its face, in its own steady colour', async ($, on) => {
+  await machine(on, { tier: 'legend', index: 4 })
+  await $.session.start(start)
+  await $.classic.UserPromptSubmit({ prompt: 'go' })
+  const ui = await $.ui.mount(RIGHT)
+  for (let t = 0; t < 3; t++) {
+    const cells = await ui.findAll({ type: 'Text', in: 'mascot' })
+    const line = cells[cells.length - 1]!
+    expect(String(line.text).startsWith(' ')).toBe(true)
+    expect(line.props.color).toBe(LEGEND_FX[4]!.theme)
+    await ui.advance(100)
   }
-  expect(new Set(seen).size).toBeGreaterThan(2)
+  await ui.unmount()
+})
+
+test('unique is one colour too, and a roll from the old roster still shows a face', async ($, on) => {
+  await machine(on, { tier: 'unique', index: 7 })
+  await $.session.start(start)
+  const ui = await $.ui.mount(RIGHT)
+  const text = await ui.find({ type: 'Text', in: 'mascot' })
+  expect(text?.text).toBe(FACES.unique[7 % FACES.unique.length]!.frames[0])
+  expect(text?.props.color).toBe('#af87ff')
   await ui.unmount()
 })
