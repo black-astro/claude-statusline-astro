@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
 import { hmacHex, shortModel } from '../hooks/mascot'
-import { FACES, LEGEND_FX, TALK } from '../hooks/mascot-data'
+import { FACES, LEGEND_FX, LEGEND_TALK, TALK } from '../hooks/mascot-data'
 
 // A key shaped like the ones the hooks make: 64 hex characters.
 const KEY = '0123456789abcdef'.repeat(4)
@@ -146,7 +146,7 @@ test('while working it rotates lines, gives a riddle its answer later, and says 
   await $.classic.UserPromptSubmit({ prompt: 'go' })
   const ui = await $.ui.mount(RIGHT)
   const said = async () => (await ui.findAll({ type: 'Text', in: 'mascot' })).map(t => t.text).join('')
-  const legend = TALK.legend
+  const legend = LEGEND_TALK[1]!
   const known = [...legend.work, ...legend.quiz.flatMap(r => [r.q, `${r.q} ${r.a}`])]
 
   // Over a full round every line comes up, and each riddle gets its answer.
@@ -378,6 +378,21 @@ test('a legend speaks one space after its face, in its own steady colour', async
     expect(line.props.color).toBe(LEGEND_FX[4]!.theme)
     await ui.advance(100)
   }
+  await ui.unmount()
+})
+
+test('each legend speaks in its own voice', async ($, on) => {
+  await machine(on, { tier: 'legend', index: 1 })
+  await $.session.start(start)
+  await $.classic.UserPromptSubmit({ prompt: 'go' })
+  const ui = await $.ui.mount(RIGHT)
+  const bat = LEGEND_TALK[1]!
+  const known = [...bat.work, ...bat.quiz.flatMap(r => [r.q, `${r.q} ${r.a}`])]
+  const cells = await ui.findAll({ type: 'Text', in: 'mascot' })
+  const line = String(cells[cells.length - 1]?.text).trim()
+  expect(known).toContain(line)
+  // ...and not in the shared legend lines.
+  expect(TALK.legend.work).not.toContain(line)
   await ui.unmount()
 })
 
