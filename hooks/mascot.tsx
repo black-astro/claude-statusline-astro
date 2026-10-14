@@ -2,8 +2,8 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { LineInfo, LineMode, LinePlace, LineWindow, MascotActivity, MascotPlace, MascotRoll, MascotTurn } from '../types'
-import { ERROR_FRAMES, FACES, FLAT, LEGEND_FX, TALK } from './mascot-data'
-import type { Activity, Riddle } from './mascot-data'
+import { ERROR_FRAMES, FACES, FLAT, LEGEND_FX, LEGEND_TALK, TALK } from './mascot-data'
+import type { Activity, Riddle, TierTalk } from './mascot-data'
 import type { FaceProps, TalkPlan } from './mascot-face'
 
 // The mascot, drawn by Claude Code itself under the prompt so a legend can
@@ -185,8 +185,14 @@ function workLines(work: string[], quiz: Riddle[]): { q: string; a: string }[] {
   return out
 }
 
-function talkPlan(t: MascotTurn, tier: MascotRoll['tier'], act: MascotActivity | null): TalkPlan {
-  const say = TALK[tier]
+// What a roll says: a legend in its own voice, every other tier its tier's.
+function voiceOf(r: MascotRoll | null): TierTalk {
+  if (r === null) return TALK.rare
+  if (r.tier === 'legend') return LEGEND_TALK[r.index] ?? TALK.legend
+  return TALK[r.tier]
+}
+
+function talkPlan(t: MascotTurn, say: TierTalk, act: MascotActivity | null): TalkPlan {
   const once = (pool: string[]) => ({ ...SILENT, lines: pool.map(plain), start: seeded(t.stamp, pool.length) })
   switch (t.state) {
     case 'working': {
@@ -214,7 +220,7 @@ async function faceProps($: EngineInterface): Promise<FaceProps | null> {
   const r = await read($, roll)
 
   if (t.state === 'error') {
-    const talk = s.isTalking ? talkPlan(t, r?.tier ?? 'rare', null) : SILENT
+    const talk = s.isTalking ? talkPlan(t, voiceOf(r), null) : SILENT
     return {
       frames: ERROR_FRAMES,
       talk,
@@ -228,7 +234,7 @@ async function faceProps($: EngineInterface): Promise<FaceProps | null> {
   if (r === null) return null
   const face = FACES[r.tier][r.index]
   if (face === undefined) return null
-  const talk = s.isTalking ? talkPlan(t, r.tier, await read($, activity)) : SILENT
+  const talk = s.isTalking ? talkPlan(t, voiceOf(r), await read($, activity)) : SILENT
   const base = { frames: face.frames, talk, animate: t.state === 'working' }
 
   if (!s.isColored) return { ...base, paint: 'plain', colors: [], bold: false }

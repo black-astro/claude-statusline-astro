@@ -38,7 +38,7 @@ FACES = {
     ],
     'legend': [
         ('Azure', ['༺(^˶•ᴗ•˶^)༻', '༺(^˶–ᴗ–˶^)༻', '༺(^˶•o•˶^)༻', '༺(^˶•ᴗ•˶^)༻']),
-        ('Luna', ['ᵛ⎛⎝(˶•ⱅ•˶)⎠⎞ᵛ', 'ᵛ⎝⎛(˶•ⱅ•˶)⎞⎠ᵛ']),
+        ('Luna', ['ᵛ⎛⎝(˶• ⱅ •˶)⎠⎞ᵛ', 'ᵛ⎝⎛(˶• ⱅ •˶)⎞⎠ᵛ']),
         ('Volt', ['ϟฅ/ᐠ˶•ﻌ•˶ᐟ\ฅϟ', 'ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ', 'ϟฅ/ᐠ˶–ﻌ–˶ᐟ\ฅϟ', 'ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ']),
         ('Blaze', ['♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨', '♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨', '♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨', '♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨', '♨ฅʕ ◣ˋ‸ˊ◢ꐦ ʔฅ♨']),
         ('Mystic', ['☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧', '☆ฅ^˶- ω -˶^ฅ✧', '☆ฅ^˶◕ ω ◕˶^ฅ✧', '☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧']),
@@ -149,6 +149,10 @@ def validate():
             if n not in INTRO:
                 ok = False
                 print('NO INTRO', n)
+    for n, _ in FACES['legend']:
+        if n not in LEGEND_TALK:
+            ok = False
+            print('NO LEGEND TALK', n)
     if len(LEGEND_FX) != len(FACES['legend']):
         ok = False
         print('LEGEND_FX does not match the legends')
@@ -287,10 +291,10 @@ INTRO = {
     'Sweetheart': '"두근! 나는 Sweetheart, 하트 강아지예요!"',
     'Songbird': '"랄랄라♪ 나는 Songbird, 노래 병아리예요!"',
     'Azure': '"크앙! 나는 Azure, 아기 청룡이에요!"',
-    'Luna': '"파닥파닥! 나는 Luna, 달빛 박쥐예요!"',
+    'Luna': '"…Luna. 달빛 박쥐야."',
     'Volt': '"찌릿! 나는 Volt, 번개 여우예요!"',
-    'Blaze': '"으르렁! 나는 Blaze, 불곰이에요!"',
-    'Mystic': '"쉿! 나는 Mystic, 마법 고양이예요!"',
+    'Blaze': '"으르렁! 나는 Blaze, 불곰이다!"',
+    'Mystic': '"쉿! 나는 Mystic, 마법 고양이랍니다."',
 }
 INTRO_DEV = '"{0}. 로그인 완료."'
 
@@ -368,6 +372,84 @@ MOD_TALK = {
 
 SCRIPT_TIERS = ['common', 'uncommon', 'rare', 'unique', 'legend', 'dev']
 
+# Each legend talks in a voice of its own, in place of the shared legend
+# lines above (same shape as MOD_TALK; the status line takes work + riddles,
+# done and notify from here too).
+#   Azure   a proud little dragon, cheerful, "크앙!"
+#   Luna    a bat: quiet, cool, short, plain speech trailing off with "…"
+#   Volt    a fox in a hurry: quick, crackling, "찌릿!"
+#   Blaze   a fire bear: gruff, hot-blooded, plain speech, "으르렁"
+#   Mystic  a magic cat: mysterious and graceful, "후후", "~랍니다"
+LEGEND_TALK = {
+    'Azure': {
+        'work': ['크앙! 용의 힘으로 해치우는 중!', '물살 타고 쭉쭉 나아가요!', '아기지만 용이라구요, 맡겨 줘요!', '파도처럼 시원하게 정리 중!'],
+        'quiz': [('자가용의 반대말은?', '커용!'), ('물고기 중에 학벌이 제일 좋은 건?', '고등어!'), ('세상에서 가장 큰 코는?', '멕시코!')],
+        'activity': {
+            'read': '두루마리를 펼쳐 읽는 중!', 'search': '물속까지 샅샅이 찾는 중!', 'edit': '용의 발톱으로 다듬는 중!',
+            'run': '숨결 한 번에 돌려 보는 중!', 'web': '구름 위에서 둘러보는 중!', 'agent': '용궁 친구들을 불렀어요!',
+        },
+        'done': ['크앙! 다 해치웠어요!', '용의 이름으로, 완료!', '시원하게 끝냈어요, 봐 줄래요?'],
+        'notify': ['크앙? 이거 같이 봐 줘요!', '여기, 골라 줘야 해요!'],
+        'error': ['크앙… 물살에 휩쓸렸어요', '앗, 다시 날아 볼게요!'],
+    },
+    'Luna': {
+        'work': ['…조용히 처리 중.', '어둠 속에서 다 보고 있어.', '소리 없이, 빠르게.', '신경 쓰지 마. 금방이야.'],
+        'quiz': [('가장 지루한 중학교는?', '…로딩중.'), ('깨가 죽으면?', '…주근깨.'), ('가장 추운 바다는?', '…썰렁해.')],
+        'activity': {
+            'read': '…읽는 중.', 'search': '찾고 있어. 어둠 속에서도 보여.', 'edit': '고치는 중. 조용히.',
+            'run': '돌려 보는 중.', 'web': '…밤하늘 너머를 살피는 중.', 'agent': '박쥐 떼를 풀었어.',
+        },
+        'done': ['…끝났어. 확인해.', '다 했어.', '…됐어. 나머진 네 몫.'],
+        'notify': ['…잠깐. 이거 봐.', '네가 정해.'],
+        'error': ['…실패. 다시 볼게.', '막혔어. 같이 봐.'],
+    },
+    'Volt': {
+        'work': ['찌릿찌릿! 번개처럼 빠르게!', '순식간에 끝낼게요, 번쩍!', '충전 완료, 달려요!', '파바박! 속도 올리는 중!'],
+        'quiz': [('제일 빠른 새는?', '눈 깜짝할 새!'), ('칼이 정색하면?', '검정색!'), ('사과가 웃으면?', '풋사과!')],
+        'activity': {
+            'read': '번개처럼 훑어 읽는 중!', 'search': '파밧! 찾는 중이에요!', 'edit': '찌릿찌릿 고치는 중!',
+            'run': '전력 투입! 돌려 보는 중!', 'web': '전파 타고 찾아보는 중!', 'agent': '번개 분신술 발동!',
+        },
+        'done': ['번쩍! 다 끝냈어요!', '찌릿, 완료! 빠르죠?', '눈 깜짝할 새 끝! 확인해 봐요!'],
+        'notify': ['찌릿! 여기 봐 줘요!', '잠깐! 골라 줘야 해요!'],
+        'error': ['앗, 합선됐어요!', '찌직… 다시 충전할게요!'],
+    },
+    'Blaze': {
+        'work': ['으르렁! 불태우는 중이다!', '뜨겁게 밀어붙인다!', '버그는 전부 태워 버리겠다!', '열기 오른다, 조금만 기다려!'],
+        'quiz': [('불고기의 반대말은?', '물고기!'), ('곰이 사우나에 들어가면?', '곰탕!'), ('가장 뜨거운 바다는?', '열바다!')],
+        'activity': {
+            'read': '불 켜고 읽는 중이다!', 'search': '냄새로 찾는 중이다!', 'edit': '달궈서 두드리는 중이다!',
+            'run': '불 붙여서 돌려 본다!', 'web': '연기 따라 찾아보는 중이다!', 'agent': '부하들을 불렀다!',
+        },
+        'done': ['다 태웠다! 확인해라!', '으르렁, 끝! 화끈하지?', '깔끔하게 불태웠다!'],
+        'notify': ['어이, 이거 봐라!', '네가 정해라, 으르렁!'],
+        'error': ['크윽, 불씨가 꺼졌다…', '으르렁… 다시 지핀다!'],
+    },
+    'Mystic': {
+        'work': ['후후, 마법을 거는 중이랍니다', '수정 구슬로 들여다보는 중이에요', '반짝이는 주문을 외우고 있어요', '조금만요, 별가루를 뿌리는 중이에요'],
+        'quiz': [('가장 억울한 도형은?', '원통이랍니다!'), ('신이 화나면?', '신발끈이에요, 후후'), ('오리가 얼면?', '언덕이랍니다!')],
+        'activity': {
+            'read': '고서를 한 장씩 넘겨 보는 중이에요', 'search': '수정 구슬로 찾는 중이에요', 'edit': '코드에 마법을 덧입히는 중이에요',
+            'run': '주문을 시험해 보는 중이에요', 'web': '먼 세계를 들여다보는 중이에요', 'agent': '사역마들을 보냈어요',
+        },
+        'done': ['짠, 마법 완성이랍니다. 후후', '주문이 통했어요, 확인해 보세요', '모든 게 제자리를 찾았답니다'],
+        'notify': ['수정 구슬이 당신을 부르고 있어요', '잠깐, 선택이 필요하답니다'],
+        'error': ['어머, 주문이 엇나갔네요…', '마법이 풀렸어요. 다시 걸어 볼게요'],
+    },
+}
+LEGEND_NAMES = [n for n, _ in FACES['legend']]
+SCRIPT_TALK_KEYS = SCRIPT_TIERS + ['legend%d' % (i + 1) for i in range(len(LEGEND_NAMES))]
+
+
+def script_talk(kind, key):
+    """The status line's pool for a tier, or for one legend (legend1..legend5)."""
+    if key.startswith('legend') and key != 'legend':
+        say = LEGEND_TALK[LEGEND_NAMES[int(key[6:]) - 1]]
+        if kind == 'work':
+            return say['work'] + ['%s %s' % qa for qa in say['quiz']]
+        return say[kind]
+    return SCRIPT_TALK[kind][key]
+
 
 # ---- script blocks ---------------------------------------------------------
 
@@ -384,8 +466,8 @@ def sh_faces():
 def sh_talk():
     out = []
     for kind in ['work', 'done', 'notify']:
-        for tier in SCRIPT_TIERS:
-            out.append("TALK_%s_%s='%s'" % (kind.upper(), tier.upper(), '|'.join(SCRIPT_TALK[kind][tier])))
+        for tier in SCRIPT_TALK_KEYS:
+            out.append("TALK_%s_%s='%s'" % (kind.upper(), tier.upper(), '|'.join(script_talk(kind, tier))))
     out.append("TALK_ERROR='%s'" % '|'.join(SCRIPT_TALK_ERROR))
     return '\n'.join(out)
 
@@ -423,8 +505,8 @@ def ps_talk():
     out = []
     for kind, var in (('work', 'TalkWork'), ('done', 'TalkDone'), ('notify', 'TalkNotify')):
         out.append('$%s = @{' % var)
-        for tier in SCRIPT_TIERS:
-            out.append('    %s = %s' % (tier, _ps_list(SCRIPT_TALK[kind][tier])))
+        for tier in SCRIPT_TALK_KEYS:
+            out.append('    %s = %s' % (tier, _ps_list(script_talk(kind, tier))))
         out.append('}')
     out.append('$TalkError = %s' % _ps_list(SCRIPT_TALK_ERROR))
     return '\n'.join(out)
@@ -472,6 +554,7 @@ def mod_data():
     flat = {t: xterm_hex(c) for t, c in FLAT_CELLS.items()}
     fx = [{k: v for k, v in f.items() if k in ('effect', 'theme', 'sides', 'ramp', 'deco')} for f in LEGEND_FX]
     talk = {t: {**MOD_TALK[t], 'quiz': [{'q': q, 'a': a} for q, a in MOD_TALK[t]['quiz']]} for t in tiers}
+    legend_talk = [{**LEGEND_TALK[n], 'quiz': [{'q': q, 'a': a} for q, a in LEGEND_TALK[n]['quiz']]} for n in LEGEND_NAMES]
     dump = lambda v: json.dumps(v, ensure_ascii=False, indent=2)
     return '\n'.join([
         '// Generated by docs/legend/render.py (python render.py mod <out>): edit it there.',
@@ -503,6 +586,9 @@ def mod_data():
         '',
         'export const TALK: Record<Tier, TierTalk> = ' + dump(talk),
         '',
+        '// Each legend speaks in its own voice, in legend order.',
+        'export const LEGEND_TALK: TierTalk[] = ' + dump(legend_talk),
+        '',
     ])
 
 
@@ -529,6 +615,11 @@ def legend_cells(text, i):
     return out
 
 
+# Glyphs the SVG fonts draw wider than one cell; they get more room so the
+# next letter does not overlap them.
+SVG_WIDE = {'༺': 1.8, '༻': 1.5, 'ⱅ': 1.5, '♨': 1.3, '☆': 1.3}
+
+
 def svg(cells):
     fs = 22
     unit = 13.6  # approx advance of one narrow cell at 22px
@@ -537,7 +628,7 @@ def svg(cells):
     for ch, col in cells:
         text = ch.replace('&', '&amp;').replace('<', '&lt;')
         parts.append('<text x="%.1f" y="22.0" fill="%s">%s</text>' % (x, col, text))
-        x += unit * (2 if cw(ch, 1) == 2 else 1) * (0.81 if cw(ch, 1) == 2 else 1)
+        x += unit * (2 if cw(ch, 1) == 2 else 1) * (0.81 if cw(ch, 1) == 2 else 1) * SVG_WIDE.get(ch, 1)
     w = int(x + 8)
     head = ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="42" viewBox="0 0 %d 42" role="img">\n'
             '<rect width="100%%" height="100%%" rx="6" fill="#0d1117"/>\n'

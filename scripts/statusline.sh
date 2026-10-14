@@ -20,7 +20,7 @@ BAR_GAP=''      # cells are flush; the glyph provides its own separation
 BAR_PAD=''      # spacing just inside the brackets
 DIR_MAX=32      # project name is left-truncated past this many characters
 
-STATUSLINE_VERSION='1.14.0'
+STATUSLINE_VERSION='1.14.1'
 
 # Run with no arguments (the way Claude Code calls it) to print the status line.
 #   --roll      roll today's mascot (once a day) and exit
@@ -465,7 +465,7 @@ KAO_COMMON='ฅ^•ω•^ฅ#ฅ^–ω–^ฅ|U(˶•ﻌ•˶)U#U(˶˘ﻌ˘˶)U|
 KAO_UNCOMMON='૮(˶•ㅅ•˶)ა#૮(˶˘ㅅ˘˶)ა|ʕ(˶•ᴥ•˶)ʔ#ʕ(˶–ᴥ–˶)ʔ|(˶•⊖•˶)#(˶–⊖–˶)|◖(˶•●•˶)◗#◖(˶–●–˶)◗|໒꒰˶•ᴗ•˶꒱১#໒꒰˶˘ᴗ˘˶꒱১'
 KAO_RARE='ʕ˶◐ᴥ◑˶ʔ#ʕ˶●ᴥ●˶ʔ|{˶ʘvʘ˶}#{˶ʘv-˶}|ʕ˶•ﻌ•˶ʔっ#ʕ˶˘ﻌ˘˶ʔっ|ฅ(˶¬ω¬˶)ฅ#ฅ(˶-ω-˶)ฅ'
 KAO_UNIQUE='❀૮(˶ᵔ ᵕ ᵔ˶)ა#❀૮(˶- ᵕ -˶)ა|∪(˶ᵔ ᴥ ᵔ˶)∪♡#∪(˶ᵕ ᴥ ᵕ˶)∪♡|ε(˶•ө•˶)з♪#ε(˶˘ө˘˶)з♪'
-KAO_LEGEND='༺(^˶•ᴗ•˶^)༻#༺(^˶–ᴗ–˶^)༻#༺(^˶•o•˶^)༻#༺(^˶•ᴗ•˶^)༻|ᵛ⎛⎝(˶•ⱅ•˶)⎠⎞ᵛ#ᵛ⎝⎛(˶•ⱅ•˶)⎞⎠ᵛ|ϟฅ/ᐠ˶•ﻌ•˶ᐟ\ฅϟ#ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ#ϟฅ/ᐠ˶–ﻌ–˶ᐟ\ฅϟ#ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ|♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨#♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨#♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨#♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨#♨ฅʕ ◣ˋ‸ˊ◢ꐦ ʔฅ♨|☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧#☆ฅ^˶- ω -˶^ฅ✧#☆ฅ^˶◕ ω ◕˶^ฅ✧#☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧'
+KAO_LEGEND='༺(^˶•ᴗ•˶^)༻#༺(^˶–ᴗ–˶^)༻#༺(^˶•o•˶^)༻#༺(^˶•ᴗ•˶^)༻|ᵛ⎛⎝(˶• ⱅ •˶)⎠⎞ᵛ#ᵛ⎝⎛(˶• ⱅ •˶)⎞⎠ᵛ|ϟฅ/ᐠ˶•ﻌ•˶ᐟ\ฅϟ#ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ#ϟฅ/ᐠ˶–ﻌ–˶ᐟ\ฅϟ#ϟฅ/ᐠ˶˘ﻌ˘˶ᐟ\ฅϟ|♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨#♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨#♨ฅʕ •ˊ ᴥ •ˋ ʔฅ♨#♨ฅʕ ˊ• ᴥ ˋ• ʔฅ♨#♨ฅʕ ◣ˋ‸ˊ◢ꐦ ʔฅ♨|☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧#☆ฅ^˶- ω -˶^ฅ✧#☆ฅ^˶◕ ω ◕˶^ฅ✧#☆ฅ^˶ᓀ ω ᓂ˶^ฅ✧'
 KAO_DEV='｛・ω・｝#｛－ω－｝|⟨◕ᴗ◕⟩#⟨◠ᴗ◠⟩|［◉_◉］#［◉‸◉］|⟨◣_◢⟩#⟨◢_◣⟩'
 
 NAME_COMMON='Kitten|Puppy|Chick|Boo|Hamster|Piglet'
@@ -483,18 +483,33 @@ TALK_WORK_RARE='차근차근 살펴보는 중이에요|어디가 아픈지 꼼�
 TALK_WORK_UNIQUE='반짝반짝 정리하는 중이에요!|예쁘게 마무리하고 있어요|오리를 생으로 먹으면? 회오리!|왕이 넘어지면? 킹콩!'
 TALK_WORK_LEGEND='물고기의 반대말은? 불고기!|제일 빠른 새는? 눈 깜짝할 새!|가장 억울한 도형은? 원통!|소금이 죽으면? 죽염!|천천히, 그래도 확실하게!'
 TALK_WORK_DEV='빌드 도는 중.|컴파일 중.|테스트 도는 중.'
+TALK_WORK_LEGEND1='크앙! 용의 힘으로 해치우는 중!|물살 타고 쭉쭉 나아가요!|아기지만 용이라구요, 맡겨 줘요!|파도처럼 시원하게 정리 중!|자가용의 반대말은? 커용!|물고기 중에 학벌이 제일 좋은 건? 고등어!|세상에서 가장 큰 코는? 멕시코!'
+TALK_WORK_LEGEND2='…조용히 처리 중.|어둠 속에서 다 보고 있어.|소리 없이, 빠르게.|신경 쓰지 마. 금방이야.|가장 지루한 중학교는? …로딩중.|깨가 죽으면? …주근깨.|가장 추운 바다는? …썰렁해.'
+TALK_WORK_LEGEND3='찌릿찌릿! 번개처럼 빠르게!|순식간에 끝낼게요, 번쩍!|충전 완료, 달려요!|파바박! 속도 올리는 중!|제일 빠른 새는? 눈 깜짝할 새!|칼이 정색하면? 검정색!|사과가 웃으면? 풋사과!'
+TALK_WORK_LEGEND4='으르렁! 불태우는 중이다!|뜨겁게 밀어붙인다!|버그는 전부 태워 버리겠다!|열기 오른다, 조금만 기다려!|불고기의 반대말은? 물고기!|곰이 사우나에 들어가면? 곰탕!|가장 뜨거운 바다는? 열바다!'
+TALK_WORK_LEGEND5='후후, 마법을 거는 중이랍니다|수정 구슬로 들여다보는 중이에요|반짝이는 주문을 외우고 있어요|조금만요, 별가루를 뿌리는 중이에요|가장 억울한 도형은? 원통이랍니다!|신이 화나면? 신발끈이에요, 후후|오리가 얼면? 언덕이랍니다!'
 TALK_DONE_COMMON='다 했어요!|짠! 끝났어요!|헤헤, 완성이에요!'
 TALK_DONE_UNCOMMON='짜잔, 다 끝냈어요!|깔끔하게 해 놨어요, 칭찬해 줘요!|완성! 확인해 볼래요?'
 TALK_DONE_RARE='다 됐어요, 꼼꼼히 봤어요!|해냈어요! 한번 볼래요?'
 TALK_DONE_UNIQUE='다 끝냈어요, 자신 있어요!|완벽하게 해 놨어요!'
 TALK_DONE_LEGEND='부탁한 거 전부 끝냈어요!|다 됐어요, 확인해 줄래요?'
 TALK_DONE_DEV='빌드 통과.|커밋하시죠.|배포 준비 완료.|테스트 전부 초록불.'
+TALK_DONE_LEGEND1='크앙! 다 해치웠어요!|용의 이름으로, 완료!|시원하게 끝냈어요, 봐 줄래요?'
+TALK_DONE_LEGEND2='…끝났어. 확인해.|다 했어.|…됐어. 나머진 네 몫.'
+TALK_DONE_LEGEND3='번쩍! 다 끝냈어요!|찌릿, 완료! 빠르죠?|눈 깜짝할 새 끝! 확인해 봐요!'
+TALK_DONE_LEGEND4='다 태웠다! 확인해라!|으르렁, 끝! 화끈하지?|깔끔하게 불태웠다!'
+TALK_DONE_LEGEND5='짠, 마법 완성이랍니다. 후후|주문이 통했어요, 확인해 보세요|모든 게 제자리를 찾았답니다'
 TALK_NOTIFY_COMMON='저기요오, 봐 줄래요?|여기 좀 봐 줘요!'
 TALK_NOTIFY_UNCOMMON='잠깐만요, 물어볼 게 있어요!|이것 좀 같이 봐 줄래요?'
 TALK_NOTIFY_RARE='확인이 필요해요, 봐 줄래요?|같이 정해야 할 게 있어요!'
 TALK_NOTIFY_UNIQUE='잠깐 봐 줄 수 있어요?|여기 확인이 필요해요!'
 TALK_NOTIFY_LEGEND='잠깐 확인해 줄래요?|같이 봐야 할 게 있어요!'
 TALK_NOTIFY_DEV='입력 대기 중.|확인 요망.'
+TALK_NOTIFY_LEGEND1='크앙? 이거 같이 봐 줘요!|여기, 골라 줘야 해요!'
+TALK_NOTIFY_LEGEND2='…잠깐. 이거 봐.|네가 정해.'
+TALK_NOTIFY_LEGEND3='찌릿! 여기 봐 줘요!|잠깐! 골라 줘야 해요!'
+TALK_NOTIFY_LEGEND4='어이, 이거 봐라!|네가 정해라, 으르렁!'
+TALK_NOTIFY_LEGEND5='수정 구슬이 당신을 부르고 있어요|잠깐, 선택이 필요하답니다'
 TALK_ERROR='앗, 넘어졌어요…|으앙, 실패했어요…'
 
 MASCOT_TIERS='common uncommon rare unique legend'
@@ -604,8 +619,12 @@ name_pool() {
     esac
 }
 
+# $2 is a tier, or legend1..legend5 for one legend's own voice.
 talk_pool() {
     case "$1.$2" in
+        *.legend[1-9])
+            eval "printf %s \"\$TALK_$(printf %s "$1" | tr '[:lower:]' '[:upper:]')_$(printf %s "$2" | tr '[:lower:]' '[:upper:]')\""
+            ;;
         work.common)       printf %s "$TALK_WORK_COMMON" ;;
         work.uncommon)     printf %s "$TALK_WORK_UNCOMMON" ;;
         work.rare)         printf %s "$TALK_WORK_RARE" ;;
@@ -882,19 +901,22 @@ mascot() {
     fi
 
     # Speaks while working, for a short while after finishing, and whenever
-    # something is waiting on you. Otherwise it stays quiet.
+    # something is waiting on you. Otherwise it stays quiet. A legend speaks
+    # in its own voice.
     _line=''
+    _voice=$ROLL_TIER
+    [ "$ROLL_TIER" = legend ] && _voice="legend$(( ROLL_INDEX + 1 ))"
     case "$_state" in
         working)
-            _line=$(pick_talk "$(talk_pool work "$ROLL_TIER")" "$_stamp")
+            _line=$(pick_talk "$(talk_pool work "$_voice")" "$_stamp")
             ;;
         notify)
-            _line=$(pick_talk "$(talk_pool notify "$ROLL_TIER")" "$_stamp")
+            _line=$(pick_talk "$(talk_pool notify "$_voice")" "$_stamp")
             ;;
         done)
             if [ "$now" -le 0 ] || [ "$_stamp" -le 0 ] ||
                [ "$(( now - _stamp ))" -le "$TALK_WINDOW_SECS" ]; then
-                _line=$(pick_talk "$(talk_pool done "$ROLL_TIER")" "$_stamp")
+                _line=$(pick_talk "$(talk_pool done "$_voice")" "$_stamp")
             fi
             ;;
     esac
@@ -951,10 +973,10 @@ intro_line() {
         Sweetheart) printf %s '"두근! 나는 Sweetheart, 하트 강아지예요!"' ;;
         Songbird) printf %s '"랄랄라♪ 나는 Songbird, 노래 병아리예요!"' ;;
         Azure) printf %s '"크앙! 나는 Azure, 아기 청룡이에요!"' ;;
-        Luna) printf %s '"파닥파닥! 나는 Luna, 달빛 박쥐예요!"' ;;
+        Luna) printf %s '"…Luna. 달빛 박쥐야."' ;;
         Volt) printf %s '"찌릿! 나는 Volt, 번개 여우예요!"' ;;
-        Blaze) printf %s '"으르렁! 나는 Blaze, 불곰이에요!"' ;;
-        Mystic) printf %s '"쉿! 나는 Mystic, 마법 고양이예요!"' ;;
+        Blaze) printf %s '"으르렁! 나는 Blaze, 불곰이다!"' ;;
+        Mystic) printf %s '"쉿! 나는 Mystic, 마법 고양이랍니다."' ;;
         *) printf '"%s. 로그인 완료."' "$2" ;;
     esac
 }
