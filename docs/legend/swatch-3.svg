@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="264" height="30" viewBox="0 0 264 30" role="img">
 <rect width="100%" height="100%" rx="6" fill="#0d1117"/>
-<rect x="4" y="4" width="22" height="22" rx="4" fill="#6aabf0"/>
-<rect x="30" y="4" width="22" height="22" rx="4" fill="#6a8cf0"/>
-<rect x="56" y="4" width="22" height="22" rx="4" fill="#6a8cf0"/>
-<rect x="82" y="4" width="22" height="22" rx="4" fill="#6a6df0"/>
-<rect x="108" y="4" width="22" height="22" rx="4" fill="#886af0"/>
-<rect x="134" y="4" width="22" height="22" rx="4" fill="#886af0"/>
-<rect x="160" y="4" width="22" height="22" rx="4" fill="#a76af0"/>
-<rect x="186" y="4" width="22" height="22" rx="4" fill="#c66af0"/>
-<rect x="212" y="4" width="22" height="22" rx="4" fill="#c66af0"/>
-<rect x="238" y="4" width="22" height="22" rx="4" fill="#e56af0"/>
+<rect x="4" y="4" width="22" height="22" rx="4" fill="#ff4e2e"/>
+<rect x="30" y="4" width="22" height="22" rx="4" fill="#ff602e"/>
+<rect x="56" y="4" width="22" height="22" rx="4" fill="#ff732f"/>
+<rect x="82" y="4" width="22" height="22" rx="4" fill="#ff8636"/>
+<rect x="108" y="4" width="22" height="22" rx="4" fill="#ff9840"/>
+<rect x="134" y="4" width="22" height="22" rx="4" fill="#ffa54c"/>
+<rect x="160" y="4" width="22" height="22" rx="4" fill="#ffa651"/>
+<rect x="186" y="4" width="22" height="22" rx="4" fill="#ff8b41"/>
+<rect x="212" y="4" width="22" height="22" rx="4" fill="#ff7036"/>
+<rect x="238" y="4" width="22" height="22" rx="4" fill="#ff5530"/>
 </svg>

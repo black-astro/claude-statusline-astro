@@ -20,7 +20,7 @@ BAR_GAP=''      # cells are flush; the glyph provides its own separation
 BAR_PAD=''      # spacing just inside the brackets
 DIR_MAX=32      # project name is left-truncated past this many characters
 
-STATUSLINE_VERSION='1.12.0'
+STATUSLINE_VERSION='1.13.0'
 
 # Run with no arguments (the way Claude Code calls it) to print the status line.
 #   --roll      roll today's mascot (once a day) and exit
@@ -44,7 +44,7 @@ case "${1:-}" in
         printf '
   statusline.sh --roll legend         등급 지정 (메인테이너 키 전용)
 '
-        printf '  statusline.sh --roll legend Wrath   얼굴 지정 (메인테이너 키 전용)
+        printf '  statusline.sh --roll legend Volt    얼굴 지정 (메인테이너 키 전용)
 '
         exit 0
         ;;
@@ -103,7 +103,7 @@ case "${STATUSLINE_MASCOT_BY_MOD:-}" in 1) SHOW_MASCOT=0 ;; esac
 # Rarity odds in per-mille, lowest rarity first, totalling 1000 and lined up with
 # MASCOT_TIERS below. These are fixed on purpose: everyone rolls against the same
 # table, and editing them turns the roll into a choice, which is no roll at all.
-MASCOT_ODDS='400 350 180 60 10'
+MASCOT_ODDS='250 300 250 150 50'
 MASCOT_TIERS='common uncommon rare unique legend'
 
 # Maintainer tier. A key whose SHA-256 is listed here also rolls 'dev' faces;
@@ -164,7 +164,7 @@ else
     C_COMMON="${ESC}[38;5;253m"     # the faintest grey
     C_UNCOMMON="${ESC}[38;5;120m"   # light green
     C_RARE="${ESC}[38;5;117m"       # sky blue
-    C_UNIQUE="${ESC}[38;5;141m"     # purple - only when the gradient is off
+    C_UNIQUE="${ESC}[38;5;141m"     # purple
     C_LEGEND="${ESC}[1;38;5;208m"   # orange, bold
     C_DEV="${ESC}[1;38;5;51m"       # cyan, bold - maintainer only
 fi
@@ -455,90 +455,92 @@ meter() {
 #
 # Each face carries frames of one expression, all the same width so the line
 # never jitters. The frames advance while a turn runs and settle on the first
-# one when it ends. Legend additionally shimmers through a flowing gradient.
+# one when it ends. Legend wears its own colour ramp, with its outside
+# decorations (the first and/or last character) in colours of their own.
 #
 # Faces are separated by '|' and their frames by '#'; no face contains either
 # character, so cut can index them. Spoken lines use the same convention.
 KAO_ERROR='（；へ；）#（；ㅅ；）'
-KAO_COMMON='（・ω・）#（－ω－）|（´ ᴗ ｀）#（´ ᴖ ｀）|（ ˘ᴗ˘ ）z#（ ˘ᴗ˘ ）Z|（=・ェ・=）#（=－ェ－=）|（・∀・）#（－∀－）|（˙◡˙）#（˙‿˙）|（￢_￢）#（￢‿￢）|（´-ι_-｀）#（´-ι.-｀）|（・_・）#（・.・）|（≖‿≖）#（≖_≖）|（◣‸◢）#（◢‸◣）|（＾ｖ＾）#（＾ｕ＾）'
-KAO_UNCOMMON='（๑˃ᴗ˂）#（๑˂ᴗ˃）|（｡•ᴗ•｡）#（｡•ᴖ•｡）|（^▽^）#（^∇^）|（◕‿◕）#（◠‿◠）|（≧Д≦）#（≧∀≦）|（･ᵕ<）#（-ᵕ<）|（ㆆ_ㆆ）#（ㆆ.ㆆ）|（◔_◔）#（◔‸◔）|（｡>ㅅ<｡）#（｡>ㅁ<｡）|（・ㅂ・）#（－ㅂ－）|（＠_＠）#（＠.＠）|（⊙o⊙）#（⊙O⊙）'
-KAO_RARE='（･ᴗ･）◇#（-ᴗ-）◆|ヽ（•‿•）ノ#ヾ（•‿•）ノ|（◕‿◕）✿#（◠‿◠）❀|\（^o^）/#\（^O^）/|（´▽｀）♪#（´▽｀）♬|（・ω・）ノ#（－ω－）ノ|（￣ｰ￣）ゞ#（￣ｰ￣）ゝ|（▼ω▼）b#（▼ω▼）d|（´ε｀）♡#（´ε｀）♥|（￢‿￢）☆#（￢‿￢）★|（☞°ヮ°）☞#（☜°ヮ°）☜|┐（´～｀）┌#┐（´〜｀）┌'
-KAO_UNIQUE='╰（☆▽☆）╯#╰（★▽★）╯|╭（◕ヮ◕）╮#╭（◠ヮ◠）╮|┗（♡‿♡）┛#┗（♥‿♥）┛|＼（•∇•）／#＼（•▽•）／|⊂（＾ᴗ＾）⊃#⊂（＾ᴖ＾）⊃|╰（￣ヘ￣）╯#╰（￣〜￣）╯|┗（╬◣_◢）┛#┗（╬◢_◣）┛|⊂（￢_￢）⊃#⊂（￢‿￢）⊃|╭（▼ヘ▼）╮#╭（▼〜▼）╮|＼（⇀‸↼）／#＼（⇀‿↼）／'
-KAO_LEGEND='·°⊰ ☆（●ᴗ●)ノ ☆ ⊱°·#·°⊰ ☆ ヽ(●ᴗ●）☆ ⊱°·#·°⊰ ☆（●o●)ノ ☆ ⊱°·#·°⊰ ☆ ヽ(●ᴗ●）☆ ⊱°·|≪◆ °（╬◣_◢)ψ ° ◆≫#≪◆ ° ψ(◣_◢╬）° ◆≫#≪◆ °（╬◣o◢)ψ ° ◆≫#≪◆ ° ψ(◣_◢╬）° ◆≫|《◆ ·（▼_▼)† · ◆》#《◆ · †(▼_▼）· ◆》#《◆ ·（▼‿▼)† · ◆》#《◆ · †(▼_▼）· ◆》|༺° ☆（◕‿◕)♪ ☆ °༻#༺° ☆ ♪(◕‿◕）☆ °༻#༺° ☆（◕ᴗ◕)♪ ☆ °༻#༺° ☆ ♪(◕‿◕）☆ °༻|⋘° ◆（◈ω◈)ζ ◆ °⋙#⋘° ◆ ζ(◈ω◈）◆ °⋙#⋘° ◆（◈▽◈)ζ ◆ °⋙#⋘° ◆ ζ(◈ω◈）◆ °⋙'
+KAO_COMMON='ฅ^•ω•^ฅ#ฅ^–ω–^ฅ|U(˶•ﻌ•˶)U#U(˶˘ﻌ˘˶)U|(˶•ө•˶)#(˶–ө–˶)|꒰˶•o•˶꒱#꒰˶˘ᴗ˘˶꒱|(๑• ﻌ •๑)#(๑– ﻌ –๑)|^(˶•(oo)•˶)^#^(˶˘(oo)˘˶)^'
+KAO_UNCOMMON='૮(˶•ㅅ•˶)ა#૮(˶˘ㅅ˘˶)ა|ʕ(˶•ᴥ•˶)ʔ#ʕ(˶–ᴥ–˶)ʔ|(˶•⊖•˶)#(˶–⊖–˶)|◖(˶•●•˶)◗#◖(˶–●–˶)◗|໒꒰˶•ᴗ•˶꒱১#໒꒰˶˘ᴗ˘˶꒱১'
+KAO_RARE='ʕ˶◐ᴥ◑˶ʔ#ʕ˶●ᴥ●˶ʔ|{˶ʘvʘ˶}#{˶ʘv-˶}|ʕ˶•ﻌ•˶ʔっ#ʕ˶˘ﻌ˘˶ʔっ|ฅ(˶¬ω¬˶)ฅ#ฅ(˶-ω-˶)ฅ'
+KAO_UNIQUE='❀૮(˶ᵔ ᵕ ᵔ˶)ა#❀૮(˶- ᵕ -˶)ა|∪(˶ᵔ ᴥ ᵔ˶)∪♡#∪(˶ᵕ ᴥ ᵕ˶)∪♡|ε(˶•ө•˶)з♪#ε(˶˘ө˘˶)з♪'
+KAO_LEGEND='ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋#ʚ૮(˶ˋ–ﻌ–ˊ˶)აɞ≋#ʚ૮(˶ˋ●ﻌ●ˊ˶)აɞ≋#ʚ૮(˶ˋ•ﻌ•ˊ˶)აɞ≋|☾꒰˶ᵔ ᴗ ᵔ˶꒱✧#☾꒰˶- ᴗ -˶꒱✧#☾꒰˶ᵔ o ᵔ˶꒱✧#☾꒰˶ᵔ ᴗ ᵔ˶꒱✧|ϟᐱ(˶•ﻌ•˶)ᐱϟ#ϟᐱ(˶˘ﻌ˘˶)ᐱϟ#ϟᐱ(˶–ﻌ–˶)ᐱϟ#ϟᐱ(˶˘ﻌ˘˶)ᐱϟ|✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧#✦ʚ꒰˶-ᴗ-˶꒱ɞ✧#✦ʚ꒰˶✧o✧˶꒱ɞ✧#✦ʚ꒰˶✧ᴗ✧˶꒱ɞ✧|/ᐠ˶ᓀ ω ᓂ˶ᐟ\⟡#/ᐠ˶ʘ ω ʘ˶ᐟ\⟡#/ᐠ˶- ω -˶ᐟ\⟡#/ᐠ˶ᓀ ω ᓂ˶ᐟ\⟡'
 KAO_DEV='｛・ω・｝#｛－ω－｝|⟨◕ᴗ◕⟩#⟨◠ᴗ◠⟩|［◉_◉］#［◉‸◉］|⟨◣_◢⟩#⟨◢_◣⟩'
 
-NAME_COMMON='Kitten|Cozy|Snooze|Whiskers|Grin|Smiley|Side-eye|Bored|Blank|Smirk|Scowl|Pleased'
-NAME_UNCOMMON='Giggle|Rosy|Beam|Bright|Squee|Wink|Stare|Eyeroll|Pout|Hamster|Dizzy|Gasp'
-NAME_RARE='Twinkle|Cheer|Blossom|Hooray|Melody|Wave|Smug|Cool|Kiss|Scheme|Gunslinger|Shrug'
-NAME_UNIQUE='Superstar|Jubilee|Lovestruck|Dazzle|Hurrah|Boss|Fury|Skeptic|Villain|Grit'
-NAME_LEGEND='Halo|Wrath|Overlord|Seraph|Wyvern'
+NAME_COMMON='Kitten|Puppy|Chick|Boo|Hamster|Piglet'
+NAME_UNCOMMON='Bunny|Teddy|Penguin|Koala|Sprite'
+NAME_RARE='Panda|Owl|Otter|Aloof'
+NAME_UNIQUE='Sakura|Sweetheart|Songbird'
+NAME_LEGEND='Azure|Luna|Volt|Stella|Mystic'
 NAME_DEV='Root|Sudo|Kernel|Daemon'
 
 # The mascot only speaks while a turn runs, right after one ends, and when
 # something is waiting on you. The rest of the time it just sits there.
-TALK_ERROR='앗...|실패했어요...'
-
-TALK_WORK_COMMON='끙...|우우|낑낑|웅...|냥... 참치 생각 중이다냥|뿌... 배고프다뿌|삐약삐약 열심히'
-TALK_WORK_UNCOMMON='하는 중!|조금만!|열일 중!|가는 중!|하는 중! 끝나면 간식 줘!|조금만! 나 지금 엄청 집중 중!|가는 중! 커피 한 잔 어때?'
-TALK_WORK_RARE='작업 중이에요|조금만 기다려요|거의 다 왔어요|작업 중이에요. 세상에서 제일 빠른 닭은? 후다닭!|거의 다 왔어요. 개가 사람을 가르치면? 개인지도!|조금만 기다려요. 소금이 죽으면? 죽염!'
-TALK_WORK_UNIQUE='처리하고 있어요!|조금만 기다려 주세요!|열심히 하는 중이에요!|처리 중이에요! 오리를 생으로 먹으면? 회오리!|열심히 하는 중이에요! 왕이 넘어지면? 킹콩!|조금만요! 세상에서 가장 뜨거운 과일은? 천도복숭아!'
-TALK_WORK_LEGEND='작업을 진행하고 있습니다!|곧 마무리됩니다, 잠시만요!|진행 중입니다. 넌센스 하나, 물고기의 반대말은? 불고기.|곧 마무리됩니다. 세상에서 가장 빠른 새는? 눈 깜짝할 새.|작업 중입니다. 가장 억울한 도형은? 원통.'
+TALK_WORK_COMMON='영차영차, 하는 중이에요!|꼼지락꼼지락 열심히!|조금만 기다려 줘요!|코드 냠냠 먹는 중이에요'
+TALK_WORK_UNCOMMON='꼬리 흔들면서 일하는 중!|집중 집중! 금방 끝낼게요|하나씩 꼭꼭 챙기고 있어요|끝나면 간식 주실 거죠?'
+TALK_WORK_RARE='차근차근 살펴보는 중이에요|어디가 아픈지 꼼꼼히 보고 있어요|제일 빠른 닭은? 후다닭!|개가 사람을 가르치면? 개인지도!'
+TALK_WORK_UNIQUE='반짝반짝 정리하는 중이에요!|예쁘게 마무리하고 있어요|오리를 생으로 먹으면? 회오리!|왕이 넘어지면? 킹콩!'
+TALK_WORK_LEGEND='물고기의 반대말은? 불고기!|제일 빠른 새는? 눈 깜짝할 새!|가장 억울한 도형은? 원통!|소금이 죽으면? 죽염!|천천히, 그래도 확실하게!'
 TALK_WORK_DEV='빌드 도는 중.|컴파일 중.|테스트 도는 중.'
-TALK_DONE_COMMON='왕!|냥!|뿌!|삐약!|꽥!|음냐'
-TALK_DONE_UNCOMMON='왕왕!|다했다!|끝!|됐다!|오케이!|히히'
-TALK_DONE_RARE='다 됐어요|끝났어요|완료했어요|해냈어요!|준비 끝!'
-TALK_DONE_UNIQUE='작업 완료했어요!|다 끝냈습니다!|깔끔하게 끝냈어요!|확인해 보세요!'
-TALK_DONE_LEGEND='요청하신 작업 모두 완료했습니다!|전부 끝냈습니다, 확인 부탁드려요!|작업을 성공적으로 마쳤습니다!'
+TALK_DONE_COMMON='다 했어요!|짠! 끝났어요!|헤헤, 완성이에요!'
+TALK_DONE_UNCOMMON='짜잔, 다 끝냈어요!|깔끔하게 해 놨어요, 칭찬해 줘요!|완성! 확인해 볼래요?'
+TALK_DONE_RARE='다 됐어요, 꼼꼼히 봤어요!|해냈어요! 한번 볼래요?'
+TALK_DONE_UNIQUE='다 끝냈어요, 자신 있어요!|완벽하게 해 놨어요!'
+TALK_DONE_LEGEND='부탁한 거 전부 끝냈어요!|다 됐어요, 확인해 줄래요?'
 TALK_DONE_DEV='빌드 통과.|커밋하시죠.|배포 준비 완료.|테스트 전부 초록불.'
-TALK_NOTIFY_COMMON='앙?|웅?|왕?'
-TALK_NOTIFY_UNCOMMON='저기요!|잠깐만요!|봐주세요!'
-TALK_NOTIFY_RARE='확인해 주세요|봐주셔야 해요'
-TALK_NOTIFY_UNIQUE='확인 부탁해요!|잠시 봐주세요!'
-TALK_NOTIFY_LEGEND='확인 부탁드립니다!|잠시 확인해 주세요!'
+TALK_NOTIFY_COMMON='저기요오, 봐 줄래요?|여기 좀 봐 줘요!'
+TALK_NOTIFY_UNCOMMON='잠깐만요, 물어볼 게 있어요!|이것 좀 같이 봐 줄래요?'
+TALK_NOTIFY_RARE='확인이 필요해요, 봐 줄래요?|같이 정해야 할 게 있어요!'
+TALK_NOTIFY_UNIQUE='잠깐 봐 줄 수 있어요?|여기 확인이 필요해요!'
+TALK_NOTIFY_LEGEND='잠깐 확인해 줄래요?|같이 봐야 할 게 있어요!'
 TALK_NOTIFY_DEV='입력 대기 중.|확인 요망.'
+TALK_ERROR='앗, 넘어졌어요…|으앙, 실패했어요…'
 
 MASCOT_TIERS='common uncommon rare unique legend'
 
-# Legend ramps, 36 cells each, generated by docs/legend/render.py
-# from the RGB keyframes there. One set in 24-bit colour, one snapped to the
-# xterm cube for terminals that only know 256 colours.
-RAMP_TRUE_DAWN='38;2;143;101;8 38;2;152;108;7 38;2;161;116;6 38;2;170;123;5 38;2;179;130;4 38;2;188;138;2 38;2;197;145;1 38;2;206;153;0 38;2;213;160;6 38;2;220;167;13 38;2;226;173;20 38;2;233;180;27 38;2;239;187;34 38;2;246;194;41 38;2;252;201;48 38;2;255;206;60 38;2;255;210;76 38;2;255;214;91 38;2;255;219;107 38;2;255;223;123 38;2;255;227;138 38;2;255;231;154 38;2;255;234;166 38;2;255;236;175 38;2;255;238;184 38;2;255;240;192 38;2;255;242;201 38;2;255;244;210 38;2;255;246;218 38;2;252;244;219 38;2;236;223;189 38;2;221;203;159 38;2;205;183;129 38;2;190;162;98 38;2;174;142;68 38;2;159;121;38'
-RAMP_TRUE_EMBER='38;2;168;37;36 38;2;174;40;39 38;2;181;43;43 38;2;187;47;46 38;2;194;50;49 38;2;200;53;53 38;2;206;56;56 38;2;213;59;59 38;2;219;64;64 38;2;224;70;70 38;2;230;76;76 38;2;236;81;81 38;2;241;87;87 38;2;247;92;92 38;2;253;98;98 38;2;255;104;104 38;2;255;111;111 38;2;255;118;118 38;2;255;125;125 38;2;255;131;131 38;2;255;138;138 38;2;255;145;145 38;2;255;151;151 38;2;255;157;155 38;2;255;162;160 38;2;255;168;164 38;2;255;173;169 38;2;255;179;173 38;2;255;185;177 38;2;253;185;177 38;2;240;164;157 38;2;228;143;137 38;2;216;121;117 38;2;204;100;96 38;2;192;79;76 38;2;180;58;56'
-RAMP_TRUE_RADIANCE='38;2;138;120;224 38;2;147;130;228 38;2;156;139;231 38;2;165;149;235 38;2;173;159;238 38;2;182;168;242 38;2;191;178;245 38;2;199;187;247 38;2;206;195;248 38;2;214;204;250 38;2;221;213;252 38;2;229;221;253 38;2;236;230;255 38;2;239;234;255 38;2;242;238;255 38;2;246;243;255 38;2;249;247;255 38;2;252;251;255 38;2;255;255;255 38;2;247;248;250 38;2;239;241;245 38;2;232;234;240 38;2;224;227;234 38;2;216;220;229 38;2;208;213;224 38;2;202;207;219 38;2;195;200;213 38;2;189;194;208 38;2;182;188;203 38;2;176;181;197 38;2;169;175;192 38;2;164;166;197 38;2;159;157;203 38;2;154;148;208 38;2;148;138;213 38;2;143;129;219'
-RAMP_TRUE_SAPPHIRE='38;2;43;74;168 38;2;46;79;176 38;2;49;85;184 38;2;51;90;191 38;2;54;95;199 38;2;57;100;207 38;2;60;106;215 38;2;62;111;222 38;2;68;117;227 38;2;74;123;232 38;2;80;129;236 38;2;86;135;240 38;2;92;141;245 38;2;98;147;249 38;2;104;154;253 38;2;111;159;255 38;2;118;165;255 38;2;126;170;255 38;2;133;176;255 38;2;141;182;255 38;2;148;187;255 38;2;156;193;255 38;2;163;198;255 38;2;171;203;255 38;2;178;207;255 38;2;186;212;255 38;2;193;217;255 38;2;201;222;255 38;2;208;226;255 38;2;209;226;253 38;2;185;204;240 38;2;162;182;228 38;2;138;161;216 38;2;114;139;204 38;2;90;117;192 38;2;67;96;180'
-RAMP_TRUE_EMERALD='38;2;15;122;74 38;2;16;128;78 38;2;17;135;83 38;2;18;141;87 38;2;19;148;92 38;2;21;154;96 38;2;22;160;101 38;2;23;167;105 38;2;27;173;110 38;2;33;180;115 38;2;39;186;120 38;2;44;192;126 38;2;50;199;131 38;2;55;205;136 38;2;61;211;141 38;2;70;216;147 38;2;81;220;154 38;2;92;223;161 38;2;103;227;168 38;2;114;231;174 38;2;125;234;181 38;2;136;238;188 38;2;147;241;194 38;2;156;243;200 38;2;165;245;205 38;2;174;247;211 38;2;183;249;216 38;2;192;251;222 38;2;201;253;228 38;2;203;251;228 38;2;176;233;206 38;2;149;214;184 38;2;122;196;162 38;2;95;177;140 38;2;69;159;118 38;2;42;140;96'
-RAMP_TRUE_UNIQUE='38;2;210;188;255 38;2;192;158;255 38;2;174;129;255 38;2;155;103;248 38;2;135;79;237 38;2;115;58;219 38;2;95;42;188 38;2;74;26;156'
-RAMP_256_DAWN='38;5;94 38;5;94 38;5;136 38;5;136 38;5;136 38;5;136 38;5;172 38;5;172 38;5;178 38;5;178 38;5;178 38;5;178 38;5;214 38;5;214 38;5;221 38;5;221 38;5;221 38;5;221 38;5;221 38;5;222 38;5;222 38;5;222 38;5;223 38;5;229 38;5;229 38;5;229 38;5;230 38;5;230 38;5;230 38;5;230 38;5;223 38;5;187 38;5;180 38;5;143 38;5;137 38;5;136'
-RAMP_256_EMBER='38;5;124 38;5;124 38;5;124 38;5;124 38;5;131 38;5;167 38;5;167 38;5;167 38;5;167 38;5;167 38;5;167 38;5;203 38;5;203 38;5;203 38;5;203 38;5;203 38;5;203 38;5;210 38;5;210 38;5;210 38;5;210 38;5;210 38;5;210 38;5;217 38;5;217 38;5;217 38;5;217 38;5;217 38;5;217 38;5;217 38;5;217 38;5;174 38;5;174 38;5;167 38;5;131 38;5;131'
-RAMP_256_RADIANCE='38;5;104 38;5;104 38;5;140 38;5;141 38;5;147 38;5;147 38;5;147 38;5;183 38;5;189 38;5;189 38;5;189 38;5;189 38;5;225 38;5;225 38;5;231 38;5;231 38;5;231 38;5;231 38;5;231 38;5;231 38;5;231 38;5;189 38;5;188 38;5;188 38;5;188 38;5;188 38;5;188 38;5;146 38;5;146 38;5;146 38;5;145 38;5;146 38;5;146 38;5;104 38;5;104 38;5;104'
-RAMP_256_SAPPHIRE='38;5;25 38;5;25 38;5;61 38;5;61 38;5;62 38;5;62 38;5;62 38;5;62 38;5;68 38;5;68 38;5;69 38;5;69 38;5;69 38;5;69 38;5;69 38;5;75 38;5;111 38;5;111 38;5;111 38;5;111 38;5;111 38;5;147 38;5;153 38;5;153 38;5;153 38;5;153 38;5;153 38;5;189 38;5;189 38;5;189 38;5;153 38;5;146 38;5;110 38;5;68 38;5;67 38;5;61'
-RAMP_256_EMERALD='38;5;29 38;5;29 38;5;29 38;5;29 38;5;29 38;5;29 38;5;35 38;5;35 38;5;35 38;5;36 38;5;36 38;5;36 38;5;78 38;5;78 38;5;78 38;5;78 38;5;78 38;5;79 38;5;79 38;5;79 38;5;115 38;5;121 38;5;121 38;5;158 38;5;158 38;5;158 38;5;158 38;5;158 38;5;194 38;5;194 38;5;152 38;5;115 38;5;115 38;5;72 38;5;72 38;5;29'
-RAMP_256_UNIQUE='38;5;183 38;5;147 38;5;141 38;5;135 38;5;99 38;5;98 38;5;55 38;5;55'
-LEGEND_PALETTES='dawn ember radiance sapphire emerald'
+# Legend colours, generated by docs/legend/render.py. Numbered by legend
+# (1-5): the body ramp (36 cells around a loop), the decoration colours
+# (seven rainbow hues, or the two yellows of the bolts) and the colour the
+# spoken line wears. One set in 24-bit colour, one snapped to the xterm cube.
+LEGEND_RAMP_TRUE_1='38;2;31;95;255 38;2;33;101;255 38;2;34;107;255 38;2;36;113;255 38;2;38;119;255 38;2;39;126;255 38;2;41;132;255 38;2;43;138;255 38;2;44;144;255 38;2;45;150;255 38;2;46;155;255 38;2;47;161;255 38;2;48;167;255 38;2;49;173;255 38;2;51;179;255 38;2;53;184;255 38;2;55;190;255 38;2;58;195;255 38;2;61;201;255 38;2;63;206;255 38;2;66;211;255 38;2;68;217;255 38;2;74;221;255 38;2;83;224;255 38;2;93;227;255 38;2;102;229;255 38;2;112;232;255 38;2;121;235;255 38;2;130;238;255 38;2;135;236;255 38;2;120;216;255 38;2;105;196;255 38;2;90;176;255 38;2;76;155;255 38;2;61;135;255 38;2;46;115;255'
+LEGEND_RAMP_TRUE_2='38;2;127;109;255 38;2;131;113;255 38;2;135;118;255 38;2;140;122;255 38;2;144;126;255 38;2;148;131;255 38;2;152;135;255 38;2;156;139;255 38;2;161;145;255 38;2;167;152;255 38;2;172;158;255 38;2;177;164;255 38;2;182;171;255 38;2;188;177;255 38;2;193;183;255 38;2;198;190;255 38;2;203;197;255 38;2;208;204;255 38;2;214;211;255 38;2;219;217;255 38;2;224;224;255 38;2;229;231;255 38;2;229;233;255 38;2;220;227;255 38;2;211;221;255 38;2;202;215;255 38;2;194;209;255 38;2;185;203;255 38;2;176;197;255 38;2;168;190;255 38;2;162;178;255 38;2;156;167;255 38;2;150;155;255 38;2;145;144;255 38;2;139;132;255 38;2;133;121;255'
+LEGEND_RAMP_TRUE_3='38;2;255;78;46 38;2;255;83;46 38;2;255;87;46 38;2;255;92;46 38;2;255;96;46 38;2;255;101;46 38;2;255;106;46 38;2;255;110;46 38;2;255;115;47 38;2;255;120;49 38;2;255;124;51 38;2;255;129;52 38;2;255;134;54 38;2;255;138;56 38;2;255;143;57 38;2;255;148;60 38;2;255;152;64 38;2;255;156;68 38;2;255;161;72 38;2;255;165;76 38;2;255;169;80 38;2;255;173;84 38;2;255;173;84 38;2;255;166;81 38;2;255;160;77 38;2;255;153;73 38;2;255;146;69 38;2;255;139;65 38;2;255;132;61 38;2;255;126;58 38;2;255;119;56 38;2;255;112;54 38;2;255;105;53 38;2;255;98;51 38;2;255;92;49 38;2;255;85;48'
+LEGEND_RAMP_TRUE_4='38;2;255;79;158 38;2;255;85;162 38;2;255;92;165 38;2;255;98;169 38;2;255;104;172 38;2;255;110;176 38;2;255;117;180 38;2;255;123;183 38;2;255;129;187 38;2;255;135;190 38;2;255;140;193 38;2;255;146;196 38;2;255;152;199 38;2;255;158;203 38;2;255;164;206 38;2;255;169;205 38;2;255;173;201 38;2;255;178;197 38;2;255;182;194 38;2;255;186;190 38;2;255;191;186 38;2;255;195;182 38;2;255;195;181 38;2;255;187;182 38;2;255;180;184 38;2;255;172;186 38;2;255;164;187 38;2;255;157;189 38;2;255;149;191 38;2;255;141;191 38;2;255;132;186 38;2;255;123;182 38;2;255;115;177 38;2;255;106;172 38;2;255;97;167 38;2;255;88;163'
+LEGEND_RAMP_TRUE_5='38;2;0;184;132 38;2;5;188;136 38;2;9;193;139 38;2;14;197;143 38;2;19;202;146 38;2;24;206;150 38;2;28;211;154 38;2;33;215;157 38;2;41;219;162 38;2;49;222;167 38;2;57;225;171 38;2;66;229;176 38;2;74;232;181 38;2;82;235;185 38;2;91;239;190 38;2;91;238;194 38;2;87;234;197 38;2;82;231;200 38;2;78;227;203 38;2;74;223;206 38;2;69;220;209 38;2;65;216;212 38;2;60;212;211 38;2;54;208;205 38;2;49;204;199 38;2;43;200;192 38;2;38;196;186 38;2;32;192;180 38;2;26;187;173 38;2;21;184;167 38;2;18;184;162 38;2;15;184;157 38;2;12;184;152 38;2;9;184;147 38;2;6;184;142 38;2;3;184;137'
+LEGEND_DECO_TRUE_1='38;2;251;86;86 38;2;251;227;86 38;2;133;251;86 38;2;86;251;180 38;2;86;180;251 38;2;133;86;251 38;2;251;86;227'
+LEGEND_DECO_TRUE_2='38;2;251;86;86 38;2;251;227;86 38;2;133;251;86 38;2;86;251;180 38;2;86;180;251 38;2;133;86;251 38;2;251;86;227'
+LEGEND_DECO_TRUE_3='38;2;255;240;74 38;2;255;184;0'
+LEGEND_DECO_TRUE_4='38;2;251;86;86 38;2;251;227;86 38;2;133;251;86 38;2;86;251;180 38;2;86;180;251 38;2;133;86;251 38;2;251;86;227'
+LEGEND_DECO_TRUE_5='38;2;251;86;86 38;2;251;227;86 38;2;133;251;86 38;2;86;251;180 38;2;86;180;251 38;2;133;86;251 38;2;251;86;227'
+LEGEND_TALK_TRUE='38;2;51;181;255 38;2;185;178;255 38;2;255;145;58 38;2;255;143;192 38;2;63;224;176'
+LEGEND_RAMP_256_1='38;5;27 38;5;27 38;5;27 38;5;27 38;5;33 38;5;33 38;5;33 38;5;33 38;5;33 38;5;33 38;5;39 38;5;39 38;5;75 38;5;75 38;5;75 38;5;75 38;5;75 38;5;81 38;5;81 38;5;81 38;5;81 38;5;81 38;5;81 38;5;81 38;5;81 38;5;81 38;5;81 38;5;123 38;5;123 38;5;123 38;5;117 38;5;81 38;5;75 38;5;75 38;5;69 38;5;33'
+LEGEND_RAMP_256_2='38;5;99 38;5;99 38;5;105 38;5;105 38;5;105 38;5;105 38;5;105 38;5;141 38;5;141 38;5;141 38;5;147 38;5;147 38;5;147 38;5;147 38;5;147 38;5;183 38;5;189 38;5;189 38;5;189 38;5;189 38;5;189 38;5;189 38;5;189 38;5;189 38;5;189 38;5;189 38;5;153 38;5;153 38;5;153 38;5;147 38;5;147 38;5;147 38;5;111 38;5;105 38;5;105 38;5;105'
+LEGEND_RAMP_256_3='38;5;202 38;5;202 38;5;202 38;5;202 38;5;202 38;5;202 38;5;202 38;5;202 38;5;208 38;5;209 38;5;209 38;5;209 38;5;209 38;5;209 38;5;209 38;5;209 38;5;209 38;5;215 38;5;215 38;5;215 38;5;215 38;5;215 38;5;215 38;5;215 38;5;215 38;5;209 38;5;209 38;5;209 38;5;209 38;5;209 38;5;209 38;5;203 38;5;203 38;5;203 38;5;203 38;5;203'
+LEGEND_RAMP_256_4='38;5;205 38;5;205 38;5;205 38;5;205 38;5;205 38;5;205 38;5;211 38;5;211 38;5;211 38;5;211 38;5;211 38;5;212 38;5;212 38;5;218 38;5;218 38;5;218 38;5;218 38;5;218 38;5;217 38;5;217 38;5;217 38;5;223 38;5;223 38;5;217 38;5;217 38;5;217 38;5;217 38;5;217 38;5;211 38;5;211 38;5;211 38;5;211 38;5;211 38;5;205 38;5;205 38;5;205'
+LEGEND_RAMP_256_5='38;5;36 38;5;36 38;5;36 38;5;42 38;5;42 38;5;42 38;5;42 38;5;43 38;5;43 38;5;79 38;5;79 38;5;79 38;5;79 38;5;85 38;5;85 38;5;85 38;5;80 38;5;80 38;5;80 38;5;80 38;5;80 38;5;80 38;5;80 38;5;80 38;5;80 38;5;43 38;5;43 38;5;37 38;5;37 38;5;37 38;5;37 38;5;37 38;5;36 38;5;36 38;5;36 38;5;36'
+LEGEND_DECO_256_1='38;5;203 38;5;221 38;5;119 38;5;85 38;5;75 38;5;99 38;5;206'
+LEGEND_DECO_256_2='38;5;203 38;5;221 38;5;119 38;5;85 38;5;75 38;5;99 38;5;206'
+LEGEND_DECO_256_3='38;5;227 38;5;214'
+LEGEND_DECO_256_4='38;5;203 38;5;221 38;5;119 38;5;85 38;5;75 38;5;99 38;5;206'
+LEGEND_DECO_256_5='38;5;203 38;5;221 38;5;119 38;5;85 38;5;75 38;5;99 38;5;206'
+LEGEND_TALK_256='38;5;75 38;5;147 38;5;209 38;5;211 38;5;79'
+LEGEND_SIDES='R LR LR LR R'
 
-# The ramp of a palette, 24-bit or 256-colour per LEGEND_TRUE_COLOR.
-legend_ramp() {
-    if [ "$LEGEND_TRUE_COLOR" -eq 1 ]; then
-        case "$1" in
-            dawn)       printf %s "$RAMP_TRUE_DAWN" ;;
-            ember)      printf %s "$RAMP_TRUE_EMBER" ;;
-            radiance)   printf %s "$RAMP_TRUE_RADIANCE" ;;
-            sapphire)   printf %s "$RAMP_TRUE_SAPPHIRE" ;;
-            emerald)    printf %s "$RAMP_TRUE_EMERALD" ;;
-            unique)     printf %s "$RAMP_TRUE_UNIQUE" ;;
-            *)          printf %s "$RAMP_TRUE_RADIANCE" ;;
-        esac
-    else
-        case "$1" in
-            dawn)       printf %s "$RAMP_256_DAWN" ;;
-            ember)      printf %s "$RAMP_256_EMBER" ;;
-            radiance)   printf %s "$RAMP_256_RADIANCE" ;;
-            sapphire)   printf %s "$RAMP_256_SAPPHIRE" ;;
-            emerald)    printf %s "$RAMP_256_EMERALD" ;;
-            unique)     printf %s "$RAMP_256_UNIQUE" ;;
-            *)          printf %s "$RAMP_256_RADIANCE" ;;
-        esac
-    fi
+# The colours of legend $2 (counted from 1), one SGR parameter per cell: $1 is
+# RAMP (the body) or DECO (the decorations). 24-bit or 256-colour per
+# LEGEND_TRUE_COLOR.
+legend_colors() {
+    _lt=256
+    [ "$LEGEND_TRUE_COLOR" -eq 1 ] && _lt=TRUE
+    eval "printf %s \"\$LEGEND_${1}_${_lt}_$2\""
+}
+
+# The one colour legend $1 (counted from 1) speaks in.
+legend_talk_color() {
+    _lt=256
+    [ "$LEGEND_TRUE_COLOR" -eq 1 ] && _lt=TRUE
+    eval "printf %s \"\$LEGEND_TALK_${_lt}\"" | cut -d' ' -f"$1"
 }
 
 kao_count() { printf %s "$1" | awk -F'|' '{print NF}'; }
@@ -651,7 +653,11 @@ read_roll() {
     ROLL_TIER=$4
     ROLL_INDEX=$5
     case "$ROLL_INDEX" in ''|*[!0-9]*) return 1 ;; esac
-    [ "$ROLL_INDEX" -lt "$(kao_count "$(gacha_pool "$4")")" ] || return 1
+    # A roll from a longer, older roster wraps onto the current one, so an
+    # earlier draw keeps a face of its tier.
+    _rn=$(kao_count "$(gacha_pool "$4")")
+    [ "$_rn" -gt 0 ] || return 1
+    ROLL_INDEX=$(( ROLL_INDEX % _rn ))
     case "$ROLL_EPOCH" in ''|*[!0-9]*) ROLL_EPOCH=0 ;; esac
     return 0
 }
@@ -779,14 +785,21 @@ awk_counts_chars() {
 
 # Paints the face with the whole palette ($3, one SGR parameter per cell),
 # darkest at the edges and lightest in the middle, and makes a few characters
-# flash the lightest colour (or the darkest where the text is already pale). Which ones is decided by a
-# small integer hash of the seed ($2) and the position, so both
-# implementations agree exactly.
+# flash the lightest colour (or the darkest where the text is already pale).
+# Which ones is decided by a small integer hash of the seed ($2) and the
+# position, so both implementations agree exactly. The decorations at the
+# sides named in $4 (L and/or R) take the colours in $5 instead: a rainbow
+# turns with the seed and its two sides sit half a turn apart, a pair (the
+# bolts' yellows) stays put, one colour per side.
 grad_text() {
-    printf %s "$1" | awk -v seed="$2" -v esc="$ESC" -v rb="$3" -v every="$SPARKLE_EVERY" '
-        BEGIN { n = split(rb, C, " "); lo = 0; hi = int(n / 2) }
+    printf %s "$1" | awk -v seed="$2" -v esc="$ESC" -v rb="$3" -v every="$SPARKLE_EVERY" -v sides="$4" -v dc="$5" '
+        BEGIN {
+            n = split(rb, C, " "); lo = 0; hi = int(n / 2)
+            nd = split(dc, D, " "); shift = int(nd / 2); rot = 0
+            if (nd > 2) rot = seed
+        }
         {
-            L = length($0)
+            L = length($0); slot = 0
             for (i = 1; i <= L; i++) {
                 d = 2 * (i - 1) - (L - 1); if (d < 0) d = -d
                 idx = hi
@@ -805,24 +818,11 @@ grad_text() {
                         }
                     }
                 }
+                if (nd > 0 && ((i == 1 && index(sides, "L")) || (i == L && index(sides, "R")))) {
+                    code = D[(rot + slot * shift) % nd + 1]
+                    slot++
+                }
                 printf "%s[%sm%s", esc, code, substr($0, i, 1)
-            }
-        }'
-}
-
-
-# Unique wears one fixed gradient, lavender to deep purple, stretched across
-# the text ($2 = the ramp). It never moves and uses few colours: a clear step
-# below legend.
-static_grad_text() {
-    printf %s "$1" | awk -v esc="$ESC" -v rb="$2" '
-        BEGIN { n = split(rb, C, " ") }
-        {
-            L = length($0)
-            for (i = 1; i <= L; i++) {
-                idx = 0
-                if (L > 1) idx = int((i - 1) * (n - 1) / (L - 1))
-                printf "%s[%sm%s", esc, C[idx + 1], substr($0, i, 1)
             }
         }'
 }
@@ -899,21 +899,15 @@ mascot() {
             ;;
     esac
     _text=$(kao_frame "$_face" "$_fr")
-    # Legend twinkles; the spoken line stays in one steady colour beside it.
+    # Legend wears its ramp and coloured decorations; the spoken line sits one
+    # space to the right in the legend's own colour, steady.
     if [ "$ROLL_TIER" = legend ] && [ -n "$RESET" ] && awk_counts_chars; then
-        _pn=$(printf %s "$LEGEND_PALETTES" | cut -d" " -f"$(( ROLL_INDEX + 1 ))")
-        _ramp=$(legend_ramp "$_pn")
+        _ln=$(( ROLL_INDEX + 1 ))
         _seed=0
         [ "$now" -gt 0 ] && _seed=$(( now % 1000003 ))
-        printf '%s' "$(grad_text "$_text" "$_seed" "$_ramp")${RESET}"
-        # The line wears its own gradient, seeded one step apart so its
-        # twinkle does not mirror the face's.
-        [ -n "$_line" ] && printf ' %s%s' "$(grad_text "$_line" "$(( _seed + 1 ))" "$_ramp")" "$RESET"
-        return 0
-    fi
-    if [ "$ROLL_TIER" = unique ] && [ -n "$RESET" ] && awk_counts_chars; then
-        printf '%s' "$(static_grad_text "$_text" "$(legend_ramp unique)")${RESET}"
-        [ -n "$_line" ] && printf ' %s%s' "$(static_grad_text "$_line" "$(legend_ramp unique)")" "$RESET"
+        _sides=$(printf %s "$LEGEND_SIDES" | cut -d' ' -f"$_ln")
+        printf '%s' "$(grad_text "$_text" "$_seed" "$(legend_colors RAMP "$_ln")" "$_sides" "$(legend_colors DECO "$_ln")")${RESET}"
+        [ -n "$_line" ] && printf ' %s[%sm%s%s' "$ESC" "$(legend_talk_color "$_ln")" "$_line" "$RESET"
         return 0
     fi
     [ -n "$_line" ] && _text="${_text} ${_line}"
@@ -926,10 +920,9 @@ mascot() {
 # is available, the flat tier colour otherwise.
 paint_face() {
     if [ "$1" = legend ] && [ -n "$RESET" ] && awk_counts_chars; then
-        _pp=$(printf %s "$LEGEND_PALETTES" | cut -d" " -f"$(( $2 + 1 ))")
-        printf '%s%s' "$(grad_text "$3" 0 "$(legend_ramp "$_pp")")" "$RESET"
-    elif [ "$1" = unique ] && [ -n "$RESET" ] && awk_counts_chars; then
-        printf '%s%s' "$(static_grad_text "$3" "$(legend_ramp unique)")" "$RESET"
+        _pl=$(( $2 + 1 ))
+        _ps=$(printf %s "$LEGEND_SIDES" | cut -d' ' -f"$_pl")
+        printf '%s%s' "$(grad_text "$3" 0 "$(legend_colors RAMP "$_pl")" "$_ps" "$(legend_colors DECO "$_pl")")" "$RESET"
     else
         printf '%s%s%s' "$(tier_color "$1")" "$3" "$RESET"
     fi
@@ -938,11 +931,11 @@ paint_face() {
 # What a freshly drawn mascot says, in its tier's manner of speaking.
 intro_line() {
     case "$1" in
-        common)   printf '"냥. 나 %s."' "$2" ;;
-        uncommon) printf '"안녕! 나는 %s!"' "$2" ;;
-        rare)     printf '"반가워요. 저는 %s이에요."' "$2" ;;
-        unique)   printf '"처음 뵙겠습니다. %s입니다!"' "$2" ;;
-        legend)   printf '"%s이라고 합니다. 함께하게 되어 영광입니다."' "$2" ;;
+        common)   printf '"뿅! 나 %s!"' "$2" ;;
+        uncommon) printf '"안녕! 나는 %s, 잘 부탁해!"' "$2" ;;
+        rare)     printf '"반가워요! 제 이름은 %s!"' "$2" ;;
+        unique)   printf '"짜잔! %s 등장이에요!"' "$2" ;;
+        legend)   printf '"드디어 만났네요! 나는 %s, 오늘 하루 잘 부탁해요!"' "$2" ;;
         dev)      printf '"%s. 로그인 완료."' "$2" ;;
     esac
 }
