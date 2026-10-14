@@ -685,6 +685,7 @@ def html_page():
         'legendTalk': [fx['theme'] for fx in LEGEND_FX],
         'flat': {t: xterm_hex(FLAT_CELLS[t]) for t in ('common', 'uncommon', 'rare', 'unique')},
         'talk': {t: SCRIPT_TALK['done'][t][0] for t in TIER_ORDER},
+        'legendSay': [LEGEND_TALK[n]['done'][0] for n in LEGEND_NAMES],
     }
     return """<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><title>statusline preview</title>
@@ -715,7 +716,7 @@ function render(){
       let face, color;
       if (t.tier === 'legend') { face = D.legend[fi][k].map(([ch, c]) => '<span style="color:' + c + '">' + esc(ch) + '</span>').join(''); color = D.legendTalk[fi]; }
       else { color = D.flat[t.tier]; face = '<span style="color:' + color + '">' + esc(f.frames[k]) + '</span>'; }
-      html += '<tr><td class="name">' + f.name + ' · ' + f.kind + '</td><td class="face">' + face + '</td><td class="line" style="color:' + color + '">' + D.talk[t.tier] + '</td></tr>';
+      html += '<tr><td class="name">' + f.name + ' · ' + f.kind + '</td><td class="face">' + face + '</td><td class="line" style="color:' + color + '">' + (t.tier === 'legend' ? D.legendSay[fi] : D.talk[t.tier]) + '</td></tr>';
     });
     html += '</table>';
   });
